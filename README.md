@@ -1,6 +1,5 @@
 # AI Career Platform
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_16-black?logo=next.js)](https://nextjs.org/)
@@ -31,10 +30,10 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 | **Backend** | [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12), [Pydantic v2](https://docs.pydantic.dev/) | High-performance async REST API and agent orchestration services |
 | **Database** | [Supabase](https://supabase.com/) PostgreSQL + [pgvector](https://github.com/pgvector/pgvector) | Relational candidate data, job postings, and vector embeddings |
 | **ORM & Migrations**| [SQLAlchemy 2.0](https://www.sqlalchemy.org/) (Async) + [Alembic](https://alembic.sqlalchemy.org/) | Async database queries with structured schema versioning |
-| **Agent Framework** | [LangGraph](https://langchain-ai.github.io/langgraph/) | Directed-graph workflow orchestration for multi-step career agents |
-| **Deployment** | AWS Lambda via [Mangum](https://mangum.fastapiexpert.com/) + API Gateway HTTP API | Serverless, cost-conscious backend running in `ap-south-1` (Mumbai) |
-| **Async Jobs** | Amazon SQS + EventBridge Scheduler | Decoupled background task workers and recurring morning digests |
-| **IaC & CI/CD** | Terraform + GitHub Actions (OIDC) | Reproducible infrastructure without static cloud credentials |
+| **Agent Framework** | [LangGraph](https://langchain-ai.github.io/langgraph/) *(Planned)* | Directed-graph workflow orchestration for multi-step career agents |
+| **Deployment** | AWS Lambda via [Mangum](https://mangum.fastapiexpert.com/) + API Gateway HTTP API *(Planned)* | Serverless, cost-conscious backend running in `ap-south-1` (Mumbai) |
+| **Async Jobs** | Amazon SQS + EventBridge Scheduler *(Planned)* | Decoupled background task workers and recurring morning digests |
+| **IaC & CI/CD** | Terraform + GitHub Actions (OIDC) *(Planned)* | Reproducible infrastructure without static cloud credentials |
 
 ---
 
@@ -43,14 +42,16 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 > **Current Milestone**: Milestone 1 — Project Foundation  
 > **Active Subphase**: `phase-00/subphase-01-agentic-governance` (Engineering Governance & Architecture Documentation)
 
-### Scaffolded State:
-- [x] Monorepo structure (`apps/api`, `apps/web`, `infra/`, `packages/`, `docs/`)
+### Current Implementation State:
+- [x] Monorepo layout initialized
 - [x] FastAPI base application (`apps/api/app/main.py`) with working `/health` endpoint
-- [x] Next.js 16 App Router application scaffolded (`apps/web`)
-- [x] Python dependencies pinned via `uv`
-- [ ] Database engine, pooling, and Alembic migrations (Planned for Subphase 02)
-- [ ] Supabase Auth middleware (Planned for Subphase 03)
-- [ ] Local Docker Compose environment (Planned for Subphase 04)
+- [x] Next.js 16 App Router frontend scaffolded (`apps/web`)
+- [x] Python dependencies pinned via `uv` (`apps/api/pyproject.toml`, `apps/api/uv.lock`)
+- [x] Engineering governance and architecture documentation established
+- [ ] Database connectivity, pooling, and Alembic migrations *(Planned for Subphase 02)*
+- [ ] Supabase Auth middleware and security fixtures *(Planned for Subphase 03)*
+- [ ] Local Docker Compose environment *(Planned for Subphase 04)*
+- [ ] CI/CD quality gates *(Planned for Subphase 05)*
 
 ---
 
@@ -60,21 +61,28 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 ai-job-agent/
 ├── apps/
 │   ├── api/                 # FastAPI backend (Python 3.12, uv)
-│   │   ├── app/             # Application source (api, core, db, modules, schemas)
-│   │   ├── tests/           # Automated test suites
-│   │   └── pyproject.toml   # Dependencies managed by uv
-│   └── web/                 # Next.js frontend application
+│   │   ├── app/             # Application source (main.py scaffolded; modules planned)
+│   │   ├── tests/           # Automated test suites (scaffolded)
+│   │   ├── pyproject.toml   # Dependencies managed by uv
+│   │   └── uv.lock          # Cryptographic dependency lockfile
+│   └── web/                 # Next.js frontend application (App Router, Tailwind)
 ├── docs/                    # Authoritative engineering documentation
 │   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012)
 │   ├── phases/              # High-level phase roadmaps
 │   ├── subphases/           # Detailed subphase specifications
 │   ├── progress/            # PROGRESS.md development tracker
 │   └── walkthroughs/        # Post-subphase audit walkthroughs
-├── infra/                   # Infrastructure definitions (docker, supabase, terraform)
-├── packages/                # Shared monorepo packages
+├── infra/                   # Infrastructure definitions (scaffolded / planned)
+│   ├── docker/              # Local Docker Compose setup (Planned)
+│   ├── supabase/            # Supabase schema definitions (Planned)
+│   └── terraform/           # Terraform AWS infrastructure (Planned)
+├── packages/
+│   └── shared-schemas/      # Shared cross-boundary schema packages (Planned)
 ├── .env.example             # Local environment variables template
+├── .gitignore               # Monorepo ignore rules
 ├── AGENTS.md                # Authoritative instructions for AI coding agents
-└── README.md                # Project documentation
+├── CLAUDE.md                # Minimal redirect to AGENTS.md
+└── README.md                # Project overview and setup guide
 ```
 
 ---
@@ -85,7 +93,6 @@ ai-job-agent/
 - **Node.js**: v20+ with npm
 - **Python**: 3.12+
 - **uv**: Fast Python package manager ([Astral uv](https://docs.astral.sh/uv/))
-- **Docker**: For upcoming local database services
 
 ### 1. Clone & Setup Environment
 ```bash
@@ -106,7 +113,7 @@ uv run uvicorn app.main:app --reload --port 8000
 ### 3. Frontend (Next.js)
 ```bash
 cd apps/web
-npm install
+npm ci
 npm run dev
 ```
 - Web Application: [http://localhost:3000](http://localhost:3000)
@@ -116,13 +123,12 @@ npm run dev
 ## 6. Engineering Documentation & Governance
 
 For complete architectural details, consult the authoritative documentation:
-- [AGENTS.md](file:///home/blackknight05/Desktop/ai-job-agent/AGENTS.md) — Coding agent rules, branching, and Definition of Done
-- [docs/PRODUCT_SPEC.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/PRODUCT_SPEC.md) — Product vision, requirements, and user personas
-- [docs/ARCHITECTURE.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/ARCHITECTURE.md) — Modular monolith, AWS serverless, and database pooling architecture
-- [docs/DEVELOPMENT_GUIDE.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/DEVELOPMENT_GUIDE.md) — Development workflow, testing, and contribution standards
-- [docs/TESTING_STRATEGY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/TESTING_STRATEGY.md) — TDD protocols and deterministic mock testing
-- [docs/SECURITY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/SECURITY.md) — Supabase Auth, BYOK encryption, and prompt injection defense
-- [docs/DEPLOYMENT.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/DEPLOYMENT.md) — AWS Lambda, Mangum, and Terraform deployment
-- [docs/COST_AND_OPERATIONS.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/COST_AND_OPERATIONS.md) — Cloud cost management and operational boundaries
-- [docs/progress/PROGRESS.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/progress/PROGRESS.md) — Live project development status
-
+- [AGENTS.md](./AGENTS.md) — Coding agent rules, branching, and Definition of Done
+- [docs/PRODUCT_SPEC.md](./docs/PRODUCT_SPEC.md) — Product vision, requirements, and user personas
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Modular monolith, AWS serverless, and database pooling architecture
+- [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) — Development workflow, testing, and contribution standards
+- [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md) — TDD protocols and deterministic mock testing
+- [docs/SECURITY.md](./docs/SECURITY.md) — Supabase Auth, BYOK encryption, and prompt injection defense
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) — AWS Lambda, Mangum, and Terraform deployment
+- [docs/COST_AND_OPERATIONS.md](./docs/COST_AND_OPERATIONS.md) — Cloud cost management and operational boundaries
+- [docs/progress/PROGRESS.md](./docs/progress/PROGRESS.md) — Live project development status

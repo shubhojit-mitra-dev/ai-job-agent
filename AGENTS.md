@@ -19,14 +19,14 @@
 
 Before proposing or executing changes, agents must consult project documentation in the following sequence:
 
-1. [AGENTS.md](file:///home/blackknight05/Desktop/ai-job-agent/AGENTS.md) (This file — governance, conventions, definition of done)
-2. [docs/progress/PROGRESS.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/progress/PROGRESS.md) (Current phase, subphase status, active branches, known issues)
-3. [docs/phases/PHASE_00_PROJECT_FOUNDATION.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/phases/PHASE_00_PROJECT_FOUNDATION.md) (Current phase milestones)
+1. [AGENTS.md](./AGENTS.md) (This file — governance, conventions, definition of done)
+2. [docs/progress/PROGRESS.md](./docs/progress/PROGRESS.md) (Current phase, subphase status, active branches, known issues)
+3. [docs/phases/PHASE_00_PROJECT_FOUNDATION.md](./docs/phases/PHASE_00_PROJECT_FOUNDATION.md) (Current phase milestones)
 4. Specific subphase specification in `docs/subphases/` for your active task
-5. [docs/ARCHITECTURE.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/ARCHITECTURE.md) (System architecture, data flows, integration constraints)
-6. [docs/PRODUCT_SPEC.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/PRODUCT_SPEC.md) (Functional requirements, user personas, boundaries)
-7. [docs/adr/](file:///home/blackknight05/Desktop/ai-job-agent/docs/adr/) (Architectural Decision Records relevant to your domain)
-8. [docs/DEVELOPMENT_GUIDE.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/DEVELOPMENT_GUIDE.md), [docs/TESTING_STRATEGY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/TESTING_STRATEGY.md), and [docs/SECURITY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/SECURITY.md)
+5. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) (System architecture, data flows, integration constraints)
+6. [docs/PRODUCT_SPEC.md](./docs/PRODUCT_SPEC.md) (Functional requirements, user personas, boundaries)
+7. [docs/adr/](./docs/adr/) (Architectural Decision Records relevant to your domain)
+8. [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md), [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md), and [docs/SECURITY.md](./docs/SECURITY.md)
 
 ---
 
@@ -72,7 +72,7 @@ ai-job-agent/
 
 ## 4. Approved Architectural Constraints
 
-All code must comply with approved Architectural Decision Records ([docs/adr/](file:///home/blackknight05/Desktop/ai-job-agent/docs/adr/)):
+All code must comply with approved Architectural Decision Records ([docs/adr/](./docs/adr/)):
 
 1. **Modular Monolith**: Clean domain boundaries within `apps/api/app/modules/`. No arbitrary microservices, separate RPC daemons, or unnecessary message brokers.
 2. **FastAPI on AWS Lambda**: Serverless backend packaging via ZIP deployed to AWS Lambda in `ap-south-1` (Mumbai) fronted by AWS API Gateway HTTP API and Mangum ASGI adapter.
@@ -81,17 +81,21 @@ All code must comply with approved Architectural Decision Records ([docs/adr/](f
    - SQLAlchemy 2.0 with `asyncpg` for application runtime.
    - For serverless AWS Lambda execution: use `NullPool` to prevent connection leaks across ephemeral instances, connect to Supabase Transaction Pooler (port 6543), and enforce `statement_cache_size=0` on `asyncpg` connect args because transaction poolers disallow prepared statement caching.
    - Alembic runs exclusively outside Lambda cold starts (CI/CD pipeline or migration runner) connecting directly to port 5432 (Session mode) with administrative credentials.
-4. **Authentication & Authorization**:
-   - Supabase Auth issues JWT access tokens.
-   - FastAPI verifies JWT signatures and claims on protected routes; SQLAlchemy queries strictly enforce user tenancy (`WHERE user_id = current_user.id`).
+4. **Authentication, Authorization & Database Isolation**:
+   - Supabase Auth issues JWT access tokens upon candidate login.
+   - FastAPI verifies JWT signatures (via Supabase JWKS), issuer, audience, and expiry on all protected routes, extracting the authenticated candidate ID (`sub`).
+   - SQLAlchemy connects to PostgreSQL using application credentials. Application SQL queries must enforce strict tenant isolation (`WHERE user_id = current_user.id`).
+   - Note: Direct SQLAlchemy connections do **not** inherit Supabase Auth context automatically. Defense in depth is provided by least-privileged database roles and/or setting session context variables for PostgreSQL Row-Level Security (RLS) policies.
 5. **Asynchronous Background Processing**:
    - Heavy background tasks (resume parsing, batch job scraping, email digest generation) are dispatched to AWS SQS queues.
    - Dedicated worker Lambdas process SQS events idempotently with Dead-Letter Queues (DLQ).
-   - EventBridge Scheduler manages cron-like recurring triggers (e.g. daily morning digests).
+   - SQS visibility timeout must be configured to at least six times the Lambda function timeout, accounting for batch windows and retry behavior.
+   - EventBridge Scheduler manages cron-like recurring triggers configured explicitly with timezone `Asia/Kolkata` (e.g. daily morning digests at 06:00 AM IST).
 6. **AI & Agent Architecture**:
    - LangGraph orchestrates multi-step career agent workflows via stateful directed graphs.
    - Bring Your Own Key (BYOK) architecture for LLM providers (NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Gemini).
    - Candidate API keys are encrypted at rest using AES-GCM envelope encryption before persistence.
+   - Candidate resumes and job descriptions are treated as untrusted input. Delimiters provide context separation but are not security boundaries. LLM outputs must never independently authorize privileged actions; all tool executions and schema outputs must be strictly authorized and validated outside the model.
    - Local/open-source Sentence Transformers embeddings are evaluated under strict Lambda bundle size limits (250MB uncompressed limit).
 7. **Prohibited Infrastructure**:
    - Do NOT introduce EC2 instances, Kubernetes/EKS, NAT Gateways without explicit approval, ElastiCache/Redis clusters, RDS instances, or always-on servers.
@@ -126,6 +130,7 @@ We adhere strictly to Test-Driven Development (TDD) for all application code:
 2. **LLM Workflow Testing**:
    - Never call live, paid external LLM APIs inside automated test suites.
    - Use deterministic mock fixtures, synthetic test resumes/job postings, and fake provider interfaces.
+   - Test for malicious inputs, prompt injection attempts, and tool authorization guards.
 3. **Database Testing**:
    - Test queries against ephemeral local PostgreSQL containers or transactional rollback fixtures.
 4. **Test Integrity**:
@@ -135,9 +140,9 @@ We adhere strictly to Test-Driven Development (TDD) for all application code:
 
 ## 7. Security & Privacy Mandates
 
-- **Sensitive Data Handling**: Candidate resumes contain Personal Identifiable Information (PII). Resumes must be stored in secure, private object storage (e.g., Supabase Storage / S3) with restricted pre-signed URL access.
+- **Sensitive Data Handling**: Candidate resumes contain Personal Identifiable Information (PII). Resume storage provider is subject to architectural evaluation (Supabase Storage vs AWS S3 in ADR-012). Access must require authenticated, short-lived pre-signed URLs.
 - **BYOK Key Protection**: User LLM keys must be encrypted at rest using authenticated symmetric encryption (AES-256-GCM). Never log or display plaintext API keys.
-- **Prompt Injection Defense**: Untrusted text from user resumes or external job postings must be sanitized and strictly encapsulated in prompts with clear boundary delimiters.
+- **Prompt Injection Defense**: Untrusted text from user resumes or external job postings must be encapsulated with boundary delimiters. LLMs must not possess autonomous authority to perform privileged state mutations without external authorization checks.
 - **SSRF Prevention**: All external job scraping and links must validate protocol (`https` only), restrict destinations to trusted hosts, and prevent loopback/internal IP requests.
 
 ---
@@ -191,4 +196,3 @@ A subphase is considered complete **only** when all of the following conditions 
   3. Determine the structural root cause rather than treating symptoms.
   4. Formulate the smallest correct fix with regression tests.
   5. Do not blind-retry commands or mask errors with loose exception catching.
-

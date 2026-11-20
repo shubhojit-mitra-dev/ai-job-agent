@@ -110,8 +110,8 @@ uv run mypy .
 ```bash
 cd apps/web
 
-# Install dependencies
-npm install
+# Install dependencies reproducibly
+npm ci
 
 # Start local Next.js dev server
 npm run dev
