@@ -69,3 +69,4 @@ Phase 00 is complete when:
   - *Mitigation*: Architect engine with `NullPool` and `statement_cache_size=0` from day one in Subphase 02.
 - **Risk**: Stale documentation across multi-step development.
   - *Mitigation*: Just-in-time subphase documentation rule; every subphase requires a walkthrough document before merge.
+

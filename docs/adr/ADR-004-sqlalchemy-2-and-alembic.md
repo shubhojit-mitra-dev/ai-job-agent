@@ -29,3 +29,4 @@ Use **SQLAlchemy 2.0** with the `asyncpg` async driver as the application ORM, a
 ## 6. References
 - SQLAlchemy 2.0 Documentation: https://docs.sqlalchemy.org/en/20/
 - Supabase with SQLAlchemy troubleshooting: https://supabase.com/kb/troubleshooting/using-sqlalchemy-with-supabase-FUqebT
+

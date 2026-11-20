@@ -26,3 +26,4 @@ We adopt a **Modular Monolith** architecture within a single monorepo (`apps/api
 ## 6. References
 - Modular Monolith architectural patterns.
 - [docs/ARCHITECTURE.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/ARCHITECTURE.md)
+

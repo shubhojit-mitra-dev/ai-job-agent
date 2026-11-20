@@ -104,3 +104,4 @@ To prevent credential leakage:
    - Run post-deployment smoke test (`GET /health`).
 3. **Rollback Strategy**:
    - Lambda versions and aliases allow instantaneous rollback to previous stable versions (`aws lambda update-alias --function-name ... --function-version PREVIOUS_STABLE`).
+

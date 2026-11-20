@@ -51,3 +51,4 @@ By default, CloudWatch log groups retain logs indefinitely, creating compounding
 - Supabase pauses free-tier projects after 7 days of inactivity.
 - Regular development and automated health probes keep active projects awake during active development cycles.
 - Monitor database storage utilization to stay well beneath the 500 MB quota by pruning raw scraped HTML and storing only normalized job summaries.
+

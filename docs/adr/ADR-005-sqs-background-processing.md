@@ -30,3 +30,4 @@ Adopt **Amazon SQS** as the asynchronous message broker, coupled with a dedicate
 ## 6. References
 - AWS Lambda with SQS: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
 - SQS Event Source Configuration: https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html
+

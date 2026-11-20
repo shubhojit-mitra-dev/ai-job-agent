@@ -28,3 +28,4 @@ Adopt **GitHub Actions OpenID Connect (OIDC)** authentication with AWS IAM:
 
 ## 6. References
 - GitHub Actions OIDC with AWS: https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws
+

@@ -125,3 +125,4 @@ For complete architectural details, consult the authoritative documentation:
 - [docs/DEPLOYMENT.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/DEPLOYMENT.md) — AWS Lambda, Mangum, and Terraform deployment
 - [docs/COST_AND_OPERATIONS.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/COST_AND_OPERATIONS.md) — Cloud cost management and operational boundaries
 - [docs/progress/PROGRESS.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/progress/PROGRESS.md) — Live project development status
+

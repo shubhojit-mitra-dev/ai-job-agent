@@ -159,3 +159,4 @@ git commit -m "docs(governance): establish root AGENTS.md and engineering guidel
 3. The subphase walkthrough must be completed in `docs/walkthroughs/`.
 4. `docs/progress/PROGRESS.md` must be updated.
 5. Create a GitHub Pull Request targeting `master` and request Technical Lead review.
+

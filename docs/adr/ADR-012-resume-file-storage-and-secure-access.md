@@ -29,3 +29,4 @@ Use **Private Object Storage (Supabase Storage / Amazon S3)** with pre-signed ac
 
 ## 6. References
 - [docs/SECURITY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/SECURITY.md)
+

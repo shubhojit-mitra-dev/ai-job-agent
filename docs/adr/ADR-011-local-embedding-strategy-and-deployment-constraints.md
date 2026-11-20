@@ -38,3 +38,4 @@ We are evaluating the following implementation paths:
 ## 6. References
 - AWS Lambda Deployment Packages: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html
 - FastEmbed / ONNX Runtime documentation.
+

@@ -191,3 +191,4 @@ flowchart LR
 - **Mangum Adapter**: Wraps the FastAPI ASGI application inside the standard AWS Lambda handler interface (`handler = Mangum(app)`).
 - **Terraform**: Manages AWS API Gateway, Lambda functions, IAM roles, SQS queues, and EventBridge schedules.
 - **GitHub Actions (OIDC)**: Deploys infrastructure and code changes securely without permanent AWS access keys.
+

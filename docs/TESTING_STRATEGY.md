@@ -109,3 +109,4 @@ uv run pytest -v --cov=app
 # Run a specific test module
 uv run pytest tests/unit/test_matching_rubric.py
 ```
+

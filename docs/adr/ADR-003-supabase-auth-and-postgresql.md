@@ -29,3 +29,4 @@ Adopt **Supabase** for user authentication and managed PostgreSQL storage:
 ## 6. References
 - Supabase Connecting to Postgres: https://supabase.com/docs/guides/database/connecting-to-postgres
 - Supabase Connection Pooling: https://supabase.com/docs/guides/database/connecting-to-postgres/pooling-and-limits
+

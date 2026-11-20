@@ -39,3 +39,4 @@ Adopt a **Two-Stage Hybrid Retrieval & Deterministic Ranking Engine**:
 ## 6. References
 - pgvector documentation: https://github.com/pgvector/pgvector
 - [docs/PRODUCT_SPEC.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/PRODUCT_SPEC.md)
+

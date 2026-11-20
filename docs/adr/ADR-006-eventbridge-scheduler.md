@@ -31,3 +31,4 @@ Use **Amazon EventBridge Scheduler** to trigger scheduled workloads:
 
 ## 6. References
 - Amazon EventBridge Scheduler User Guide: https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html
+

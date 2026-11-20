@@ -27,3 +27,4 @@ Deploy the FastAPI backend as a serverless function on **AWS Lambda** in region 
 ## 6. References
 - AWS Lambda Python Developer Guide: https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html
 - Mangum Documentation: https://mangum.fastapiexpert.com/
+

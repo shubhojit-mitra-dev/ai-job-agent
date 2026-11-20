@@ -138,3 +138,4 @@ flowchart LR
 2. **Recruiter Portal**: No employer accounts, posting management, or candidate resume databases.
 3. **Paid Monetization**: No subscription gating, payment processing, or recruiter credits.
 4. **Proprietary Scraper Reverse-Engineering**: All job data ingestion must respect robots.txt and official APIs.
+

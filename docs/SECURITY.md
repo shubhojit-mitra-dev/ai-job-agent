@@ -98,3 +98,4 @@ Job listings link to external application portals. To protect backend workers:
   - All profile records, extracted skills, career preferences, and dealbreaker entries are cascaded from PostgreSQL.
   - All stored resume files are purged from object storage.
   - All stored BYOK API keys are permanently shredded.
+
