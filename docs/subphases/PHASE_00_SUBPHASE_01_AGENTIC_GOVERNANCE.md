@@ -3,7 +3,7 @@
 > **Subphase Identifier**: `PHASE_00_SUBPHASE_01`  
 > **Subphase Name**: Engineering Governance, Architecture Documentation & AI-Agent Development System  
 > **Git Branch**: `phase-00/subphase-01-agentic-governance`  
-> **Status**: Active (Implementation & Validation)  
+> **Status**: In Review  
 > **Target Delivery**: Documentation Only (Zero Application Logic Changes)
 
 ---
@@ -61,8 +61,8 @@ This subphase codifies all approved architectural decisions, product specificati
    - `docs/SECURITY.md` addresses candidate resume PII protection, BYOK AES-GCM encryption, and prompt injection defense.
 3. **Architectural Decision Records**:
    - All 12 initial ADRs exist in `docs/adr/` using the standard ADR template.
-   - ADR-011 is properly marked `Proposed` with trade-offs regarding the 250 MB Lambda ZIP packaging limit.
-   - ADR-001 through ADR-010 and ADR-012 are marked `Accepted`.
+   - ADR-001 through ADR-010 are marked `Accepted`.
+   - ADR-011 (Local Embedding Strategy) and ADR-012 (Resume Storage Provider) are marked `Proposed`.
 4. **Phase & Subphase Discipline**:
    - Phase 00 plan outlines 5 subphases.
    - Only Subphase 01 has a detailed subphase document. Future subphases remain plan-level items.

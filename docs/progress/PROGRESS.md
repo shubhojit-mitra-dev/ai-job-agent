@@ -4,7 +4,7 @@
 > **Last Updated**: 2026-11-20  
 > **Current Milestone**: Milestone 1 — Project Foundation  
 > **Current Phase**: `PHASE_00` (Project Foundation)  
-> **Current Subphase**: `PHASE_00_SUBPHASE_01` (Engineering Governance & Architecture Documentation)
+> **Current Subphase**: `PHASE_00_SUBPHASE_01` (In Review)
 
 ---
 
@@ -27,7 +27,7 @@
 
 | Subphase ID | Subphase Name | Branch | Status | PR Reference |
 | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Engineering Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **Completed (Awaiting Review)** | [PR #1](https://github.com/shubhojit-mitra-dev/ai-job-agent/pull/1) |
+| **01** | **Engineering Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **In Review** | [PR #1](https://github.com/shubhojit-mitra-dev/ai-job-agent/pull/1) |
 | **02** | Database Connectivity & Alembic Scaffolding | `phase-00/subphase-02-db-connectivity-alembic` | Pending | — |
 | **03** | Supabase Auth Verification & Security Middleware | `phase-00/subphase-03-auth-middleware` | Pending | — |
 | **04** | Local Development Environment (Docker Compose) | `phase-00/subphase-04-local-docker-compose` | Pending | — |

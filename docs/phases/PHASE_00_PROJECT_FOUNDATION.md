@@ -2,7 +2,7 @@
 
 > **Phase Identifier**: `PHASE_00`  
 > **Phase Name**: Project Foundation  
-> **Status**: Active (Subphase 01 in progress)  
+> **Status**: Active (Subphase 01 in review)  
 > **Target Subphases**: 5 Subphases
 
 ---
@@ -34,7 +34,7 @@ Phase 00 is broken into 5 logically sequenced subphases:
 
 | Subphase ID | Subphase Name | Git Branch | Status | Scope Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Agentic Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **Active** | Root governance, product spec, architecture, ADRs, test strategy, security specs, and progress tracking. |
+| **01** | **Agentic Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **In Review** | Root governance, product spec, architecture, ADRs, test strategy, security specs, and progress tracking. |
 | **02** | **Database Connectivity & Alembic Scaffolding** | `phase-00/subphase-02-db-connectivity-alembic` | Pending | SQLAlchemy 2.0 async engine, `NullPool` config, session lifecycle, base model, and verified Alembic setup. |
 | **03** | **Supabase Auth Middleware & Security** | `phase-00/subphase-03-auth-middleware` | Pending | Backend JWT signature verification, `CurrentUser` dependency, tenant isolation checks, and auth test fixtures. |
 | **04** | **Local Development Environment** | `phase-00/subphase-04-local-docker-compose` | Pending | Docker Compose with PostgreSQL + `pgvector`, seed scripts, local verification commands. |

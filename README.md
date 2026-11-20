@@ -40,7 +40,7 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 ## 3. Current Project Status
 
 > **Current Milestone**: Milestone 1 — Project Foundation  
-> **Active Subphase**: `phase-00/subphase-01-agentic-governance` (Engineering Governance & Architecture Documentation)
+> **Active Subphase**: `phase-00/subphase-01-agentic-governance` (In Review)
 
 ### Current Implementation State:
 - [x] Monorepo layout initialized
@@ -49,6 +49,7 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 - [x] Python dependencies pinned via `uv` (`apps/api/pyproject.toml`, `apps/api/uv.lock`)
 - [x] Engineering governance and architecture documentation established
 - [ ] Database connectivity, pooling, and Alembic migrations *(Planned for Subphase 02)*
+- [ ] Automated test suites (`apps/api/tests/`) *(Planned for Subphase 02+)*
 - [ ] Supabase Auth middleware and security fixtures *(Planned for Subphase 03)*
 - [ ] Local Docker Compose environment *(Planned for Subphase 04)*
 - [ ] CI/CD quality gates *(Planned for Subphase 05)*
@@ -61,28 +62,37 @@ The **AI Career Platform** provides an open-source, candidate-first alternative 
 ai-job-agent/
 ├── apps/
 │   ├── api/                 # FastAPI backend (Python 3.12, uv)
-│   │   ├── app/             # Application source (main.py scaffolded; modules planned)
-│   │   ├── tests/           # Automated test suites (scaffolded)
-│   │   ├── pyproject.toml   # Dependencies managed by uv
-│   │   └── uv.lock          # Cryptographic dependency lockfile
-│   └── web/                 # Next.js frontend application (App Router, Tailwind)
-├── docs/                    # Authoritative engineering documentation
-│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012)
-│   ├── phases/              # High-level phase roadmaps
-│   ├── subphases/           # Detailed subphase specifications
-│   ├── progress/            # PROGRESS.md development tracker
-│   └── walkthroughs/        # Post-subphase audit walkthroughs
-├── infra/                   # Infrastructure definitions (scaffolded / planned)
-│   ├── docker/              # Local Docker Compose setup (Planned)
-│   ├── supabase/            # Supabase schema definitions (Planned)
-│   └── terraform/           # Terraform AWS infrastructure (Planned)
-├── packages/
-│   └── shared-schemas/      # Shared cross-boundary schema packages (Planned)
-├── .env.example             # Local environment variables template
-├── .gitignore               # Monorepo ignore rules
-├── AGENTS.md                # Authoritative instructions for AI coding agents
-├── CLAUDE.md                # Minimal redirect to AGENTS.md
-└── README.md                # Project overview and setup guide
+│   │   ├── app/             # Application source tree
+│   │   │   ├── api/v1/      # REST API route handlers (planned)
+│   │   │   ├── core/        # Core configuration, security, telemetry (planned)
+│   │   │   ├── db/          # Database engine, session lifecycle, base models (planned)
+│   │   │   ├── modules/     # Domain business logic (planned)
+│   │   │   ├── schemas/     # Domain Pydantic request/response schemas (planned)
+│   │   │   └── main.py      # FastAPI application entrypoint & /health route (existing)
+│   │   ├── pyproject.toml   # Dependencies managed by uv (existing)
+│   │   └── uv.lock          # Cryptographic dependency lockfile (existing)
+│   │   # Note: apps/api/tests/ is planned for implementation in Subphase 02+
+│   └── web/                 # Next.js frontend application (App Router, Tailwind) (existing)
+│       ├── src/app/         # Next.js App Router pages and layouts (existing)
+│       ├── public/          # Static assets (existing)
+│       └── AGENTS.md        # Next.js-specific framework agent guidance (existing)
+├── docs/                    # Authoritative engineering documentation (existing)
+│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012) (existing)
+│   ├── phases/              # High-level phase roadmaps (existing)
+│   ├── subphases/           # Detailed subphase specifications (existing)
+│   ├── progress/            # PROGRESS.md development tracker (existing)
+│   └── walkthroughs/        # Post-subphase audit walkthroughs (existing)
+├── infra/                   # Infrastructure definitions (planned)
+│   ├── docker/              # Local Docker Compose setup (planned)
+│   ├── supabase/            # Supabase schema definitions (planned)
+│   └── terraform/           # Terraform AWS infrastructure (planned)
+├── packages/                # Shared monorepo packages (planned)
+│   └── shared-schemas/      # Shared cross-boundary schema packages (planned)
+├── .env.example             # Local environment variables template (existing)
+├── .gitignore               # Monorepo ignore rules (existing)
+├── AGENTS.md                # Authoritative instructions for AI coding agents (existing)
+├── CLAUDE.md                # Minimal redirect to AGENTS.md (existing)
+└── README.md                # Project overview and setup guide (existing)
 ```
 
 ---

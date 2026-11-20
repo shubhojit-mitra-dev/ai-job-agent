@@ -36,36 +36,36 @@ Before proposing or executing changes, agents must consult project documentation
 ai-job-agent/
 ├── apps/
 │   ├── api/                 # FastAPI backend (Python 3.12, uv, Mangum adapter)
-│   │   ├── app/
-│   │   │   ├── api/v1/      # REST API route handlers
-│   │   │   ├── core/        # Core configuration, security, telemetry
-│   │   │   ├── db/          # Database engine, session lifecycle, base models
-│   │   │   ├── modules/     # Domain business logic (candidate, jobs, matching, agent)
-│   │   │   ├── schemas/     # Domain Pydantic request/response schemas
-│   │   │   └── main.py      # FastAPI application entrypoint & ASGI lifespan
-│   │   ├── tests/           # Unit, integration, and contract test suites
-│   │   ├── pyproject.toml   # Python package definitions and dependency pins
-│   │   └── uv.lock          # Cryptographic dependency lockfile
-│   └── web/                 # Next.js frontend (TypeScript, Tailwind CSS, App Router)
-│       ├── src/app/         # Next.js App Router pages and layouts
-│       ├── public/          # Static assets
-│       └── AGENTS.md        # Next.js-specific framework agent guidance (preserved)
-├── docs/                    # Authoritative engineering, architecture, and phase documentation
-│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012)
-│   ├── phases/              # High-level phase roadmaps
-│   ├── subphases/           # Detailed per-subphase implementation plans
-│   ├── progress/            # PROGRESS.md tracking file
-│   └── walkthroughs/        # Post-subphase audit walkthroughs
-├── infra/
-│   ├── docker/              # Local Docker Compose & test container definitions
-│   ├── supabase/            # Supabase schema definitions and local config
+│   │   ├── app/             # Application source tree
+│   │   │   ├── api/v1/      # REST API route handlers (planned)
+│   │   │   ├── core/        # Core configuration, security, telemetry (planned)
+│   │   │   ├── db/          # Database engine, session lifecycle, base models (planned)
+│   │   │   ├── modules/     # Domain business logic (planned)
+│   │   │   ├── schemas/     # Domain Pydantic request/response schemas (planned)
+│   │   │   └── main.py      # FastAPI application entrypoint & /health route (existing)
+│   │   ├── pyproject.toml   # Python package definitions and dependency pins (existing)
+│   │   └── uv.lock          # Cryptographic dependency lockfile (existing)
+│   │   # Note: apps/api/tests/ is planned for implementation in Subphase 02+
+│   └── web/                 # Next.js frontend (TypeScript, Tailwind CSS, App Router) (existing)
+│       ├── src/app/         # Next.js App Router pages and layouts (existing)
+│       ├── public/          # Static assets (existing)
+│       └── AGENTS.md        # Next.js-specific framework agent guidance (existing)
+├── docs/                    # Authoritative engineering, architecture, and phase documentation (existing)
+│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012) (existing)
+│   ├── phases/              # High-level phase roadmaps (existing)
+│   ├── subphases/           # Detailed per-subphase implementation plans (existing)
+│   ├── progress/            # PROGRESS.md tracking file (existing)
+│   └── walkthroughs/        # Post-subphase audit walkthroughs (existing)
+├── infra/                   # Infrastructure definitions (planned)
+│   ├── docker/              # Local Docker Compose & test container definitions (planned)
+│   ├── supabase/            # Supabase schema definitions and local config (planned)
 │   └── terraform/           # AWS Infrastructure as Code (planned)
-├── packages/
-│   └── shared-schemas/      # Shared cross-boundary schema definitions
-├── .env.example             # Documented template for local environment variables
-├── .gitignore               # Strict ignore rules for environments, builds, and artifacts
-├── CLAUDE.md                # Direct pointer to AGENTS.md
-└── README.md                # Human-friendly repository overview and setup guide
+├── packages/                # Shared monorepo packages (planned)
+│   └── shared-schemas/      # Shared cross-boundary schema definitions (planned)
+├── .env.example             # Documented template for local environment variables (existing)
+├── .gitignore               # Strict ignore rules for environments, builds, and artifacts (existing)
+├── CLAUDE.md                # Direct pointer to AGENTS.md (existing)
+└── README.md                # Human-friendly repository overview and setup guide (existing)
 ```
 
 ---
