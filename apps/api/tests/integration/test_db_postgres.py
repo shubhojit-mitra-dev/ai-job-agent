@@ -21,7 +21,7 @@ async def test_real_postgres_connection_and_pgvector_extension() -> None:
     """Verify real PostgreSQL connection and confirmation of vector extension installation."""
     engine = create_async_engine(
         settings.DATABASE_URL,
-        connect_args={"connect_timeout": 2},
+        connect_args={"timeout": 5.0},
     )
     try:
         async with engine.connect() as conn:
@@ -55,7 +55,7 @@ async def test_real_postgres_transaction_rollback_semantics() -> None:
     """Verify transaction rollback semantics on an actual PostgreSQL instance."""
     engine = create_async_engine(
         settings.DATABASE_URL,
-        connect_args={"connect_timeout": 2},
+        connect_args={"timeout": 5.0},
     )
     try:
         async with engine.connect() as conn:
