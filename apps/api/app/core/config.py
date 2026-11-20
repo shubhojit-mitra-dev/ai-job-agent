@@ -1,7 +1,8 @@
 """Application settings and environment configuration."""
 
-from typing import List, Literal, Optional
-from pydantic import Field, field_validator
+from typing import Literal
+
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,17 +26,25 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/career_platform",
         description="Async database connection URL used by application runtime",
     )
-    MIGRATION_DATABASE_URL: Optional[str] = Field(
+    MIGRATION_DATABASE_URL: str | None = Field(
         default=None,
-        description="Direct session-mode database URL (port 5432) for Alembic migrations. Defaults to DATABASE_URL if unset.",
+        description=(
+            "Direct session-mode database URL (port 5432) for Alembic migrations. "
+            "Defaults to DATABASE_URL if unset."
+        ),
     )
     DB_POOL_CLASS: Literal["NullPool", "QueuePool"] = Field(
         default="NullPool",
-        description="NullPool for serverless / transaction pooler; QueuePool for continuous local dev if needed.",
+        description=(
+            "NullPool for serverless / transaction pooler; QueuePool for continuous local dev."
+        ),
     )
     DB_STATEMENT_CACHE_SIZE: int = Field(
         default=0,
-        description="Must remain 0 for Supabase / PgBouncer transaction pooling to prevent prepared-statement cache failures.",
+        description=(
+            "Must remain 0 for Supabase / PgBouncer transaction pooling "
+            "to prevent prepared-statement failures."
+        ),
     )
 
     # Supabase Authentication & Cryptographic Verification
@@ -51,22 +60,23 @@ class Settings(BaseSettings):
         default="authenticated",
         description="Audience claim ('aud') required on incoming Supabase access tokens",
     )
-    SUPABASE_JWT_ALGORITHMS: List[str] = Field(
+    SUPABASE_JWT_ALGORITHMS: list[str] = Field(
         default=["RS256", "ES256"],
         description="Allowed asymmetric signature algorithms for Supabase JWKS verification",
     )
-    SUPABASE_JWT_SECRET: Optional[str] = Field(
+    SUPABASE_JWT_SECRET: str | None = Field(
         default=None,
         description="Optional shared secret for test environments only. Forbidden in production.",
     )
 
     @field_validator("SUPABASE_JWT_SECRET")
     @classmethod
-    def validate_jwt_secret_in_prod(cls, v: Optional[str], info) -> Optional[str]:
+    def validate_jwt_secret_in_prod(cls, v: str | None, info: ValidationInfo) -> str | None:
         app_env = info.data.get("APP_ENV", "development")
         if app_env == "production" and v is not None:
             raise ValueError(
-                "SUPABASE_JWT_SECRET is forbidden in production; asymmetric JWKS verification is strictly required."
+                "SUPABASE_JWT_SECRET is forbidden in production; "
+                "asymmetric JWKS verification is strictly required."
             )
         return v
 
