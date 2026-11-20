@@ -1,0 +1,3 @@
+# Root Docker Compose entrypoint delegating to infrastructure services
+include:
+  - infra/docker/docker-compose.yml
