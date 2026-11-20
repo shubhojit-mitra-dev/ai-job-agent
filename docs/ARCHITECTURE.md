@@ -108,7 +108,7 @@ It is a critical architectural requirement that **Supabase Auth does NOT automat
 2. **Database Connection Layer**: SQLAlchemy connects to PostgreSQL using fixed database credentials (connection string). PostgreSQL authenticates the backend process as a database role, not the individual candidate.
 3. **Application-Level Isolation**: Every candidate-scoped SQL query must explicitly filter by the authenticated user ID (`WHERE user_id = current_user.id`).
 4. **Defense in Depth**: Relying solely on application-level filtering is necessary but not sufficient for true defense in depth. We evaluate:
-   - Setting session-level transaction parameters (e.g. `SET LOCAL app.current_user_id = :uid`) on each checkout so PostgreSQL Row-Level Security (RLS) policies can enforce tenant boundaries.
+   - Setting a transaction-scoped configuration parameter (e.g. `SET LOCAL app.current_user_id = :uid`) inside each database transaction before executing tenant-protected queries. Because `SET LOCAL` is strictly scoped to the transaction lifecycle, it automatically clears at transaction end and is fully compatible with Supabase transaction-mode pooling.
    - Using a dedicated application database role granted least-privilege table permissions (SELECT, INSERT, UPDATE, DELETE on application tables only) rather than the administrative `postgres` superuser role.
 
 ---

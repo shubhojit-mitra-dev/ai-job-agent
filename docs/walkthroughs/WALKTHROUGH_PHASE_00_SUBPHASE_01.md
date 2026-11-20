@@ -84,7 +84,7 @@ In [docs/SECURITY.md](../SECURITY.md) and [docs/ARCHITECTURE.md](../ARCHITECTURE
 - Supabase Auth validates JWTs at the FastAPI middleware layer, extracting the candidate UUID (`sub`).
 - Supabase Auth does **not** protect direct SQLAlchemy connections. SQLAlchemy connects as an application database role.
 - Tenant isolation is enforced at the application level on every query (`WHERE user_id = current_user.id`).
-- Defense in depth is provided by evaluating least-privileged database roles and transaction session context variables (`SET LOCAL app.current_user_id = :uid`) to drive PostgreSQL Row-Level Security (RLS) policies.
+- Defense in depth is provided by evaluating least-privileged database roles and executing transaction-scoped context parameters (`SET LOCAL app.current_user_id = :uid`) inside each transaction before tenant-protected queries to drive PostgreSQL Row-Level Security (RLS) policies without connection-level leakage across pooled transactions.
 
 ### 3.3. SQS Visibility Timeout Best Practice
 In [ADR-005](../adr/ADR-005-sqs-background-processing.md) and [docs/DEPLOYMENT.md](../DEPLOYMENT.md), we codified the AWS best-practice relationship:

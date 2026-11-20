@@ -41,7 +41,7 @@ A critical architectural boundary must be maintained: **Supabase Auth does NOT a
 - **Application-Level User Ownership**: Every candidate-scoped SQL query must explicitly filter by the authenticated user ID (`WHERE user_id = current_user.id`). This application-level check is mandatory for every operation (read, insert, update, delete).
 - **Database-Level Defense in Depth**:
   1. *Least-Privileged Role*: The runtime application should connect using a dedicated non-superuser role (e.g. `app_user`) restricted strictly to the tables and operations it requires.
-  2. *Session Context for RLS*: To achieve true database-level tenant isolation, the application session can set a transaction-scoped configuration variable upon checkout (e.g. `SET LOCAL app.current_user_id = :authenticated_user_id`), allowing PostgreSQL RLS policies to evaluate and enforce ownership constraints directly at the database engine level.
+  2. *Transaction-Scoped Context for RLS*: To achieve true database-level tenant isolation, the application must explicitly set the user context (e.g. `SET LOCAL app.current_user_id = :authenticated_user_id`) inside each database transaction before executing tenant-protected queries. Because `SET LOCAL` is strictly transaction-scoped, its effect automatically ends when the transaction commits or rolls back; it never persists beyond the transaction boundary. This makes it completely safe and compatible with Supabase transaction-mode pooling (where underlying physical connections are dynamically reassigned between transactions).
 
 ---
 

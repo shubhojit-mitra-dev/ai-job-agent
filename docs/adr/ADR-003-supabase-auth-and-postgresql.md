@@ -18,7 +18,7 @@ Adopt **Supabase** for user authentication and managed PostgreSQL storage:
    - Supabase Auth validates caller identity at the API Gateway / FastAPI middleware level.
    - Supabase Auth does **not** automatically protect direct SQLAlchemy database connections. The application database role connects using application credentials.
    - Application queries must enforce user ownership (`WHERE user_id = current_user.id`).
-   - Defense in depth is provided by using a dedicated least-privileged database role and evaluating session-scoped configuration parameters (`SET LOCAL app.current_user_id = :uid`) to drive PostgreSQL Row-Level Security (RLS) policies.
+   - Defense in depth is provided by using a dedicated least-privileged database role and evaluating transaction-scoped configuration parameters (`SET LOCAL app.current_user_id = :uid`) executed inside each transaction before tenant-protected queries to drive PostgreSQL Row-Level Security (RLS) policies without connection-level leakage across pooled transactions.
 
 ## 3. Alternatives Considered
 - **AWS RDS PostgreSQL**: AWS RDS requires minimum ~$15/month for the smallest `db.t4g.micro` instance with zero included free auth services. Rejected due to cost.

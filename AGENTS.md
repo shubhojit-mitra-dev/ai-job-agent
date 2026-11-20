@@ -85,7 +85,7 @@ All code must comply with approved Architectural Decision Records ([docs/adr/](.
    - Supabase Auth issues JWT access tokens upon candidate login.
    - FastAPI verifies JWT signatures (via Supabase JWKS), issuer, audience, and expiry on all protected routes, extracting the authenticated candidate ID (`sub`).
    - SQLAlchemy connects to PostgreSQL using application credentials. Application SQL queries must enforce strict tenant isolation (`WHERE user_id = current_user.id`).
-   - Note: Direct SQLAlchemy connections do **not** inherit Supabase Auth context automatically. Defense in depth is provided by least-privileged database roles and/or setting session context variables for PostgreSQL Row-Level Security (RLS) policies.
+   - Note: Direct SQLAlchemy connections do **not** inherit Supabase Auth context automatically. Defense in depth is provided by least-privileged database roles and/or setting transaction-scoped context variables for PostgreSQL Row-Level Security (RLS) policies inside each transaction.
 5. **Asynchronous Background Processing**:
    - Heavy background tasks (resume parsing, batch job scraping, email digest generation) are dispatched to AWS SQS queues.
    - Dedicated worker Lambdas process SQS events idempotently with Dead-Letter Queues (DLQ).
