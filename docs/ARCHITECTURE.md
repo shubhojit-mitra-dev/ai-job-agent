@@ -3,7 +3,7 @@
 > **Status**: Approved Foundation  
 > **Audience**: Technical Lead, Software Engineers, AI Coding Agents  
 > **Target Region**: AWS `ap-south-1` (Mumbai)  
-> **Revision**: 1.0 (Phase 00)
+> **Revision**: 1.1 (Phase 00)
 
 ---
 
@@ -23,18 +23,18 @@ flowchart TD
     Lambda["FastAPI Backend (AWS Lambda + Mangum)"]
     SQS["Amazon SQS (Task Queue + DLQ)"]
     WorkerLambda["Worker Lambda (Async Processing)"]
-    EventBridge["Amazon EventBridge Scheduler"]
+    EventBridge["Amazon EventBridge Scheduler (Asia/Kolkata)"]
     SupabaseDB[("Supabase PostgreSQL + pgvector")]
-    Storage[("Supabase / S3 Object Storage")]
+    Storage[("Object Storage: S3 vs Supabase Storage (ADR-012)")]
     LLMProviders["BYOK LLM Providers (NIM, CF AI, OpenRouter, Gemini)"]
 
     Client -->|HTTPS / JWT| Gateway
     Gateway -->|ASGI Payload| Lambda
     Lambda -->|SQL / pgvector| SupabaseDB
-    Lambda -->|Signed URLs| Storage
+    Lambda -->|Pre-signed URLs| Storage
     Lambda -->|Dispatch Job| SQS
     Lambda -->|LLM Inference (BYOK)| LLMProviders
-    EventBridge -->|Scheduled Cron Trigger| SQS
+    EventBridge -->|Daily 06:00 IST Cron| SQS
     SQS -->|Batch Events| WorkerLambda
     WorkerLambda -->|Update Status / Data| SupabaseDB
     WorkerLambda -->|Send Email| Client
@@ -71,7 +71,7 @@ flowchart TD
 
 ---
 
-## 3. Database Architecture & Connection Pooling
+## 3. Database Architecture, Connection Pooling & Tenant Isolation
 
 The primary data store is **Supabase PostgreSQL** augmented with the **`pgvector`** extension for vector similarity calculations.
 
@@ -85,8 +85,8 @@ sequenceDiagram
     Note over Lambda,Postgres: Serverless Request Execution with NullPool
     Lambda->>Pooler: Connect via asyncpg (statement_cache_size=0)
     Pooler->>Postgres: Acquire transaction-level physical connection
-    Lambda->>Postgres: Execute query / pgvector search
-    Lambda->>Pooler: Close session / return connection
+    Lambda->>Postgres: Execute scoped query (WHERE user_id = :uid)
+    Lambda->>Pooler: Close session / release connection
     Note over Lambda: Lambda goes idle or terminates
 ```
 
@@ -101,8 +101,15 @@ To ensure stability and cost control:
 3. **Database Migration Isolation**:
    - Alembic runs **strictly outside** runtime Lambda execution (invoked via local CLI or CI/CD deployment jobs).
    - Alembic connects to **Port 5432 (Session Mode / Direct)** with dedicated administrative credentials because DDL operations and migrations require session-level locks and prepared statements.
-4. **Tenant Isolation**:
-   - All candidate-scoped queries enforce user isolation at the SQL layer: `WHERE candidate_profile.user_id = :authenticated_user_id`.
+
+### 3.2. Authentication vs. Database Tenant Isolation
+It is a critical architectural requirement that **Supabase Auth does NOT automatically secure direct SQLAlchemy database connections**:
+1. **API Authentication Layer**: The client passes a Supabase JWT in the `Authorization: Bearer <token>` header. The FastAPI backend authenticates the caller by validating the JWT signature using Supabase's JWKS, checking claims (`iss`, `aud`, `exp`), and extracting the candidate user ID (`sub`).
+2. **Database Connection Layer**: SQLAlchemy connects to PostgreSQL using fixed database credentials (connection string). PostgreSQL authenticates the backend process as a database role, not the individual candidate.
+3. **Application-Level Isolation**: Every candidate-scoped SQL query must explicitly filter by the authenticated user ID (`WHERE user_id = current_user.id`).
+4. **Defense in Depth**: Relying solely on application-level filtering is necessary but not sufficient for true defense in depth. We evaluate:
+   - Setting session-level transaction parameters (e.g. `SET LOCAL app.current_user_id = :uid`) on each checkout so PostgreSQL Row-Level Security (RLS) policies can enforce tenant boundaries.
+   - Using a dedicated application database role granted least-privilege table permissions (SELECT, INSERT, UPDATE, DELETE on application tables only) rather than the administrative `postgres` superuser role.
 
 ---
 
@@ -145,6 +152,11 @@ To support user privacy and zero-marginal-cost operation:
 - Supported providers: NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Google Gemini.
 - Candidate keys are encrypted at rest using AES-256-GCM envelope encryption and decrypted only in ephemeral execution memory.
 
+### 4.3. Prompt Injection Defense & Authorization Boundaries
+- Resumes and job descriptions are untrusted inputs. Delimiters (such as `<candidate_resume>`) provide context separation for parsing prompts, but do **not** constitute a formal security boundary.
+- **Principle of Non-Autonomous Authorization**: LLM outputs must never independently authorize privileged state mutations or data exports.
+- All agent tool invocations must adhere to strict, allowlisted schemas, and the backend must validate structured outputs and enforce tenant authorization checks independently of the model.
+
 ---
 
 ## 5. Local Embeddings & Packaging Constraints
@@ -156,8 +168,8 @@ The target architecture prefers local/open-source Sentence Transformers embeddin
 - PyTorch and transformers runtimes frequently exceed 300–500 MB.
 - **Architectural Investigation (ADR-011)**:
   - *Option A*: Package a lightweight ONNX Runtime with quantized model weights (< 120 MB) inside the ZIP deployment.
-  - *Option B*: Offload embedding generation to a dedicated containerized worker or serverless inference endpoint (e.g., Cloudflare Workers AI / Fastembed).
-  - *Resolution*: Investigated in ADR-011. The primary API Lambda must **not** be bloated with standard PyTorch wheels.
+  - *Option B*: Offload embedding generation to a dedicated worker or serverless inference endpoint (e.g., Cloudflare Workers AI / Fastembed in SQS worker).
+  - *Resolution*: Investigated in [ADR-011](./adr/ADR-011-local-embedding-strategy-and-deployment-constraints.md). The primary API Lambda must **not** be bloated with standard PyTorch wheels.
 
 ---
 
@@ -167,20 +179,22 @@ Heavy or periodic tasks must never block synchronous user HTTP requests.
 
 ```mermaid
 flowchart LR
-    Event["EventBridge Cron (Daily 06:00 IST)"] -->|Send Batch Message| SQS["AWS SQS Queue"]
+    Event["EventBridge Scheduler (Daily 06:00 IST)"] -->|Send Batch Message| SQS["AWS SQS Queue"]
     HTTP["FastAPI Upload Endpoint"] -->|Enqueue Parse Task| SQS
-    SQS -->|Trigger (Batch Size: 5)| Worker["Worker Lambda"]
-    Worker -->|Failed 3x| DLQ["Dead-Letter Queue (DLQ)"]
+    SQS -->|Trigger (Batch Size: 1-10)| Worker["Worker Lambda"]
+    Worker -->|Failed after retries| DLQ["Dead-Letter Queue (DLQ)"]
     Worker -->|Success| DB[("Supabase PostgreSQL")]
 ```
 
-1. **Amazon SQS**:
+1. **Amazon SQS & Visibility Timeout Best Practice**:
    - Manages asynchronous queues for: resume parsing, embedding generation, and daily digest dispatch.
    - Configured with a Dead-Letter Queue (DLQ) with `maxReceiveCount=3` for fault tolerance.
+   - **Visibility Timeout Relationship**: In accordance with official AWS documentation, the SQS queue visibility timeout must be configured to **at least 6 times the Lambda function timeout**, also taking into account the configured batch window (`MaximumBatchingWindowInSeconds`) and retry behavior. This prevents duplicate processing of in-flight messages while workers execute.
 2. **Worker Lambda**:
    - Listens to SQS events, processes tasks idempotently, and records state back to PostgreSQL.
 3. **EventBridge Scheduler**:
-   - Triggers cron events (e.g., `cron(0 0 * * ? *)` - 05:30 AM IST) to formulate daily email digests.
+   - Manages recurring schedules configured with the explicit timezone **`Asia/Kolkata`**.
+   - Example: Daily candidate email digest triggers at **06:00 AM IST** (`cron(0 6 * * ? *)` with `schedule_expression_timezone = "Asia/Kolkata"`).
 
 ---
 
@@ -189,6 +203,5 @@ flowchart LR
 - **AWS Region**: `ap-south-1` (Mumbai) to ensure low latency for Indian candidates.
 - **API Gateway HTTP API**: Cost-effective managed gateway providing TLS termination, CORS configuration, and routing to Lambda.
 - **Mangum Adapter**: Wraps the FastAPI ASGI application inside the standard AWS Lambda handler interface (`handler = Mangum(app)`).
-- **Terraform**: Manages AWS API Gateway, Lambda functions, IAM roles, SQS queues, and EventBridge schedules.
+- **Terraform**: Manages AWS API Gateway, Lambda functions, IAM roles, SQS queues, and EventBridge schedules using S3 remote state with S3-native state locking.
 - **GitHub Actions (OIDC)**: Deploys infrastructure and code changes securely without permanent AWS access keys.
-
