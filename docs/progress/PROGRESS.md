@@ -39,7 +39,7 @@
 
 - **Active Branch**: `phase-00/subphase-01-agentic-governance`
 - **Default Branch**: `master` (Protected, clean)
-- **Merged PRs**: None (Initial foundation subphase)
+- **Active PR**: [PR #1: Establish engineering governance, architecture documentation and agent system](https://github.com/shubhojit-mitra-dev/ai-job-agent/pull/1)
 
 ---
 
@@ -49,6 +49,11 @@
   - *Status*: **Proposed**
   - *Context*: Standard Sentence Transformers / PyTorch models exceed the 250 MB AWS Lambda ZIP package limit and cause cold-start latency.
   - *Evaluation*: Proposes ONNX Runtime / FastEmbed CPU wheels in the SQS Worker Lambda or lightweight serverless inference endpoints. Awaiting technical lead review before implementation.
+
+- **ADR-012: Resume File Storage and Secure Access**:
+  - *Status*: **Proposed**
+  - *Context*: Candidate resumes contain sensitive personal information (PII) requiring private object storage with pre-signed access controls.
+  - *Evaluation*: Evaluates Supabase Storage (consolidated auth/RLS ecosystem) versus Amazon S3 in `ap-south-1` (co-located with Lambda compute, zero intra-region egress, native IAM, lifecycle rules). Awaiting technical lead review before selecting the authoritative provider.
 
 ---
 
