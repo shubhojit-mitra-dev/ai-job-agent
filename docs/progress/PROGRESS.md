@@ -67,7 +67,7 @@
 
 ## 5. Known Issues & Blockers
 
-- *None*: The complete milestone passed 16 automated tests, strict mypy type checking across all 24 source files, ruff lint and format validation, Docker Compose schema validation, and Next.js 16 production static builds.
+- *None*: Milestone 1 foundation hardening passed 29 automated tests (27 passing locally with 2 real PostgreSQL tests enforced in CI service container), strict mypy static analysis across all 26 backend source files, Ruff lint and format validation, Docker Compose schema validation, and Next.js 16 production static compilation. Candidate-level database authorization and tenant isolation are intentionally scoped for implementation alongside candidate domain models in Phase 01.
 
 ---
 

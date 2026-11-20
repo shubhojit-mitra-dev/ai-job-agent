@@ -1,8 +1,8 @@
 """Application settings and environment configuration."""
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     APP_ENV: Literal["development", "test", "production"] = "development"
     APP_SECRET_KEY: str = Field(
-        default="insecure-dev-secret-key-change-in-production-32b",
+        default="dev-only-local-secret-key-not-for-production-min32b",
         description="Application secret key for local cryptographic state",
     )
 
@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     DB_POOL_CLASS: Literal["NullPool", "QueuePool"] = Field(
         default="NullPool",
         description=(
-            "NullPool for serverless / transaction pooler; QueuePool for continuous local dev."
+            "Connection pool class: 'NullPool' for serverless / transaction poolers (PgBouncer), "
+            "or 'QueuePool' for stateful continuous local development connections."
         ),
     )
     DB_STATEMENT_CACHE_SIZE: int = Field(
@@ -53,7 +54,7 @@ class Settings(BaseSettings):
         description="Supabase project URL",
     )
     SUPABASE_ANON_KEY: str = Field(
-        default="dev-anon-key",
+        default="dev-only-placeholder-anon-key-local-dev",
         description="Supabase anonymous client key",
     )
     SUPABASE_JWT_AUDIENCE: str = Field(
@@ -69,16 +70,41 @@ class Settings(BaseSettings):
         description="Optional shared secret for test environments only. Forbidden in production.",
     )
 
-    @field_validator("SUPABASE_JWT_SECRET")
-    @classmethod
-    def validate_jwt_secret_in_prod(cls, v: str | None, info: ValidationInfo) -> str | None:
-        app_env = info.data.get("APP_ENV", "development")
-        if app_env == "production" and v is not None:
-            raise ValueError(
-                "SUPABASE_JWT_SECRET is forbidden in production; "
-                "asymmetric JWKS verification is strictly required."
-            )
-        return v
+    @model_validator(mode="after")
+    def validate_production_configuration(self) -> Self:
+        """Enforce strict configuration rules for production deployments."""
+        if self.APP_ENV == "production":
+            if "example.supabase.co" in self.SUPABASE_URL or not self.SUPABASE_URL.startswith(
+                "https://"
+            ):
+                raise ValueError(
+                    "SUPABASE_URL must be a valid https URL and cannot "
+                    "use the example placeholder in production."
+                )
+            if (
+                "dev-" in self.SUPABASE_ANON_KEY
+                or "placeholder" in self.SUPABASE_ANON_KEY
+                or len(self.SUPABASE_ANON_KEY) < 20
+            ):
+                raise ValueError(
+                    "SUPABASE_ANON_KEY cannot use development placeholder "
+                    "credentials in production."
+                )
+            if (
+                "insecure" in self.APP_SECRET_KEY
+                or "dev-" in self.APP_SECRET_KEY
+                or len(self.APP_SECRET_KEY) < 32
+            ):
+                raise ValueError(
+                    "APP_SECRET_KEY cannot use development placeholder and must "
+                    "be at least 32 characters in production."
+                )
+            if self.SUPABASE_JWT_SECRET is not None:
+                raise ValueError(
+                    "SUPABASE_JWT_SECRET is forbidden in production; "
+                    "asymmetric JWKS verification is strictly required."
+                )
+        return self
 
     @property
     def supabase_issuer(self) -> str:

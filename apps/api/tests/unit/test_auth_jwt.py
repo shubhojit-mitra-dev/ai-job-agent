@@ -1,5 +1,6 @@
 """Unit tests for Supabase JWT verification and cryptographic security rules."""
 
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -8,8 +9,9 @@ from unittest.mock import MagicMock, patch
 import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from fastapi import HTTPException
+from jwt.exceptions import InvalidKeyError, PyJWKClientConnectionError, PyJWKSetError
 
 from app.core.config import settings
 from app.core.security import verify_supabase_jwt
@@ -30,14 +32,27 @@ def rsa_key_pair() -> tuple[rsa.RSAPrivateKey, str]:
     return private_key, pem_public
 
 
+@pytest.fixture(scope="module")
+def ec_key_pair() -> tuple[ec.EllipticCurvePrivateKey, str]:
+    """Generate ephemeral EC NIST P-256 key pair for ES256 asymmetric JWT tests."""
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    public_key = private_key.public_key()
+    pem_public = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode("utf-8")
+    return private_key, pem_public
+
+
 def create_token(
-    private_key: rsa.RSAPrivateKey,
+    private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey,
+    algorithm: str = "RS256",
     headers: dict[str, Any] | None = None,
     claims: dict[str, Any] | None = None,
 ) -> str:
-    """Helper creating signed RS256 token with default valid claims."""
+    """Helper creating signed token with default valid claims."""
     now = datetime.now(UTC)
-    default_headers: dict[str, Any] = {"alg": "RS256", "kid": "test-key-id", "typ": "JWT"}
+    default_headers: dict[str, Any] = {"alg": algorithm, "kid": "test-key-id", "typ": "JWT"}
     default_claims: dict[str, Any] = {
         "iss": settings.supabase_issuer,
         "aud": settings.SUPABASE_JWT_AUDIENCE,
@@ -55,14 +70,14 @@ def create_token(
     return jwt.encode(
         payload=default_claims,
         key=private_key,
-        algorithm="RS256",
+        algorithm=algorithm,
         headers=default_headers,
     )
 
 
-def test_verify_valid_asymmetric_jwt(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:
+def test_verify_valid_asymmetric_jwt_rs256(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:
     private_key, pem_public = rsa_key_pair
-    token = create_token(private_key)
+    token = create_token(private_key, algorithm="RS256")
 
     mock_signing_key = MagicMock()
     mock_signing_key.key = pem_public
@@ -75,6 +90,88 @@ def test_verify_valid_asymmetric_jwt(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]
         assert payload["email"] == "candidate@example.com"
         assert payload["role"] == "authenticated"
         assert "sub" in payload
+
+
+def test_verify_valid_asymmetric_jwt_es256(
+    ec_key_pair: tuple[ec.EllipticCurvePrivateKey, str],
+) -> None:
+    """Verify ES256 tokens are cryptographically supported and accepted."""
+    private_key, pem_public = ec_key_pair
+    token = create_token(private_key, algorithm="ES256")
+
+    mock_signing_key = MagicMock()
+    mock_signing_key.key = pem_public
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.return_value = mock_signing_key
+
+    with patch("app.core.security.get_jwks_client", return_value=mock_jwks_client):
+        payload = verify_supabase_jwt(token)
+        assert payload["email"] == "candidate@example.com"
+        assert payload["role"] == "authenticated"
+        assert "sub" in payload
+
+
+def test_verify_jwks_provider_unavailable_returns_503(
+    rsa_key_pair: tuple[rsa.RSAPrivateKey, str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify operational network failures during JWKS fetch return controlled 503."""
+    private_key, _ = rsa_key_pair
+    token = create_token(private_key)
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKClientConnectionError(
+        "Connection refused to Supabase auth endpoint"
+    )
+
+    with (
+        patch("app.core.security.get_jwks_client", return_value=mock_jwks_client),
+        caplog.at_level(logging.ERROR),
+        pytest.raises(HTTPException) as exc_info,
+    ):
+        verify_supabase_jwt(token)
+
+    assert exc_info.value.status_code == 503
+    assert "temporarily unavailable" in exc_info.value.detail
+    # Verify token string was NEVER leaked into logs
+    assert token not in caplog.text
+
+
+def test_verify_unknown_kid_returns_401(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:
+    """Verify unknown or unresolvable key ID returns 401 Unauthorized."""
+    private_key, _ = rsa_key_pair
+    token = create_token(private_key, headers={"kid": "unknown-ghost-kid"})
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKSetError(
+        "Unable to find a signing key that matches the key id"
+    )
+
+    with (
+        patch("app.core.security.get_jwks_client", return_value=mock_jwks_client),
+        pytest.raises(HTTPException) as exc_info,
+    ):
+        verify_supabase_jwt(token)
+
+    assert exc_info.value.status_code == 401
+
+
+def test_verify_malformed_key_returns_401(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:
+    """Verify malformed JWK key returns 401 Unauthorized."""
+    private_key, _ = rsa_key_pair
+    token = create_token(private_key)
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = InvalidKeyError("Key format invalid")
+
+    with (
+        patch("app.core.security.get_jwks_client", return_value=mock_jwks_client),
+        pytest.raises(HTTPException) as exc_info,
+    ):
+        verify_supabase_jwt(token)
+
+    assert exc_info.value.status_code == 401
 
 
 def test_verify_expired_jwt(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:
@@ -194,6 +291,7 @@ def test_verify_disallowed_algorithm() -> None:
         },
         key="super-secret-key-32-bytes-long-for-test",
         algorithm="HS256",
+        headers={"kid": "some-key-id"},
     )
 
     with (

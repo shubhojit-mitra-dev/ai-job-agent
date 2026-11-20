@@ -1,18 +1,27 @@
+# Local development PostgreSQL with pgvector extension.
+#
+# Execution & Security Notes:
+# - Base image: pgvector/pgvector:pg16
+# - Container execution user: The container entrypoint starts with root (uid=0) to configure
+#   mounted volume permissions on /var/lib/postgresql/data, then drops privileges to the
+#   internal 'postgres' user (uid=999) which owns all running postgres daemon processes.
+# - Password configuration: POSTGRES_PASSWORD defaults to an explicit local-only development
+#   password ('postgres_local_dev_insecure'). Never use this default in shared environments.
 services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: career-platform-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: career_platform
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-career_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_local_dev_insecure}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d career_platform"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-career_platform}"]
       interval: 5s
       timeout: 5s
       retries: 5

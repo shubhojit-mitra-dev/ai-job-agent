@@ -14,10 +14,17 @@ from app.core.config import settings
 
 
 def get_engine_pool(pool_name: str) -> type[Pool] | None:
-    """Resolve pool class based on configuration."""
+    """Resolve pool class based on configuration.
+
+    Returns NullPool for serverless Lambda execution or transaction-pooled PgBouncer,
+    preventing connection leaks across ephemeral container lifetimes.
+    Returns None for continuous local development to let SQLAlchemy use standard QueuePool.
+    """
     if pool_name == "NullPool":
         return NullPool
-    return None  # SQLAlchemy uses default QueuePool when poolclass is None
+    if pool_name == "QueuePool":
+        return None  # None instructs create_async_engine to use standard QueuePool
+    return None
 
 
 # Enforce statement_cache_size=0 for Supabase / PgBouncer transaction pooling
@@ -46,7 +53,11 @@ async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency yielding a transaction-safe async database session."""
+    """Dependency yielding a transaction-safe async database session.
+
+    Ensures that any unhandled exception within the request scope triggers an explicit
+    rollback, and guarantees that the session connection is closed in all execution paths.
+    """
     async with async_session_maker() as session:
         try:
             yield session
