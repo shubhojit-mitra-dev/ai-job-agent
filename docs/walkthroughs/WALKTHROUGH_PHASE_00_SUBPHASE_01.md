@@ -131,5 +131,6 @@ graph TD
 
 ## 6. Commit & Pull Request Readiness
 
+- PR: [GitHub PR #1](https://github.com/shubhojit-mitra-dev/ai-job-agent/pull/1)
 - Branch: `phase-00/subphase-01-agentic-governance`
-- Atomic documentation commits prepared for push and PR creation.
+- Atomic documentation commits prepared and pushed to origin.

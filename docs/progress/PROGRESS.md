@@ -27,7 +27,7 @@
 
 | Subphase ID | Subphase Name | Branch | Status | PR Reference |
 | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Engineering Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **Completed (Awaiting Review)** | [PR #1 (Pending Approval)](#) |
+| **01** | **Engineering Governance & Architecture Documentation** | `phase-00/subphase-01-agentic-governance` | **Completed (Awaiting Review)** | [PR #1](https://github.com/shubhojit-mitra-dev/ai-job-agent/pull/1) |
 | **02** | Database Connectivity & Alembic Scaffolding | `phase-00/subphase-02-db-connectivity-alembic` | Pending | — |
 | **03** | Supabase Auth Verification & Security Middleware | `phase-00/subphase-03-auth-middleware` | Pending | — |
 | **04** | Local Development Environment (Docker Compose) | `phase-00/subphase-04-local-docker-compose` | Pending | — |
