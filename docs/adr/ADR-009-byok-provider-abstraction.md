@@ -31,5 +31,4 @@ Implement a **Bring Your Own Key (BYOK)** LLM provider abstraction:
 - Key theft. Mitigated by AES-256-GCM encryption at rest, memory-only decryption, and zero logging of key parameters.
 
 ## 6. References
-- [docs/SECURITY.md](file:///home/blackknight05/Desktop/ai-job-agent/docs/SECURITY.md)
-
+- [docs/SECURITY.md](../SECURITY.md)
