@@ -1,8 +1,8 @@
 # Product Specification: AI Career Platform
 
-> **Status**: Approved Foundation  
+> **Status**: Approved Foundation (AWS-Native Target Architecture)  
 > **Audience**: Engineering, Product Architecture, AI Coding Agents  
-> **Revision**: 1.0 (Phase 00)
+> **Revision**: 2.0 (Phase 01 Architecture Migration)
 
 ---
 
@@ -23,8 +23,8 @@ The AI Career Platform flips this paradigm by acting as a personal, autonomous c
 ## 2. Core Product Principles
 
 1. **Free & Open-Source**: Core functionality is freely accessible without paywalls, subscription tiers, or artificial limitations.
-2. **Bring Your Own Key (BYOK)**: To maintain sustainable cloud operations and preserve user privacy, advanced LLM reasoning uses user-supplied API keys (NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Google Gemini, etc.).
-3. **Local & Open Embeddings**: Semantic retrieval and vector indexing leverage lightweight, open-source embedding models (e.g., Sentence Transformers) where practical.
+2. **Bring Your Own Key (BYOK)**: To maintain sustainable cloud operations and preserve user privacy, advanced LLM reasoning supports user-supplied API keys (NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Google Gemini, etc.) in addition to the platform's AWS Bedrock tier.
+3. **AWS-Native Scalability**: Cloud infrastructure is consolidated on AWS serverless technologies in `ap-south-1` (Mumbai) to minimize latency, protect candidate data privacy, and eliminate idle infrastructure charges.
 4. **Transparent, Explainable Matching**: No black-box scores. Every compatibility rating is accompanied by a breakdown of matched skills, missing competencies, domain alignment, and explicit dealbreaker violations.
 5. **No Hallucinated Information**: The platform never fabricates job postings, company details, direct application URLs, or candidate experience on tailored resumes.
 6. **No Automated Application Spam**: In the initial release, the platform will **not** submit applications automatically on behalf of users. Candidates retain full agency and must apply via direct, verified employer links.
@@ -55,18 +55,18 @@ The AI Career Platform flips this paradigm by acting as a personal, autonomous c
 
 ```mermaid
 flowchart LR
-    A["1. Register & Supabase Auth"] --> B["2. Upload Resume (PDF)"]
+    A["1. Register & Auth (Cognito)"] --> B["2. Upload Resume (S3)"]
     B --> C["3. Extract Structured Profile"]
     C --> D["4. Interactive Career Chat"]
     D --> E["5. Persistent Memory & Dealbreakers"]
-    E --> F["6. Semantic Job Ingestion & Retrieval"]
+    E --> F["6. Semantic Retrieval (S3 Vectors + Aurora)"]
     F --> G["7. Explainable Scoring & Comparison"]
     G --> H["8. Tailor Resume & Daily Email Digest"]
 ```
 
 ### 4.1. Authentication & Candidate Profile
-- **FR-01**: Candidate can securely authenticate using Supabase Auth (Email/Password or OAuth).
-- **FR-02**: Candidate can upload their resume in PDF or DOCX format (up to 5MB).
+- **FR-01**: Candidate can securely authenticate using **Amazon Cognito User Pools** (Email/Password with email OTP verification).
+- **FR-02**: Candidate can upload their resume in PDF or DOCX format (up to 5MB) via short-lived pre-signed S3 URLs.
 - **FR-03**: Async parser extracts structured candidate data: contact details, education, technical skills, domain expertise, project highlights, and work history.
 - **FR-04**: Candidate can view, edit, augment, or overwrite extracted information at any time.
 
@@ -83,8 +83,8 @@ flowchart LR
 - **FR-08**: Job ingestion pipeline indexes opportunities from permitted, legitimate job boards and company career portals.
 - **FR-09**: Opportunities are parsed into structured entities: Title, Company, Location, Work Mode (Remote/Hybrid/Onsite), Experience Range, Salary/Stipend, Required Skills, and Direct Application Link.
 - **FR-10**: Hybrid Retrieval Engine:
-  - Vector similarity search via `pgvector` for semantic match.
-  - Exact relational filtering for hard constraints (locations, experience band, salary threshold).
+  - Vector similarity search via **Amazon S3 Vectors** for semantic matching.
+  - Exact relational filtering in **Amazon Aurora PostgreSQL Serverless v2** for hard constraints (locations, experience band, salary threshold).
   - Negative filtering against candidate dealbreakers.
 
 ### 4.4. Explainable Matching & Opportunity Comparison
@@ -113,9 +113,9 @@ flowchart LR
 ## 5. Non-Functional Requirements (NFR)
 
 - **Performance**: API responses for conversational queries under 2.5 seconds (p95); search retrieval under 300ms (p95).
-- **Cost Minimization**: Backend runs serverless on AWS Lambda (`ap-south-1`) to minimize idle costs; no always-running virtual machines or managed cache clusters.
+- **Cost Minimization**: Backend runs serverless on AWS Lambda (`ap-south-1`) to minimize idle costs; no always-running virtual machines, managed Redis cache clusters, or unneeded NAT Gateways.
 - **Availability**: 99.9% uptime for core API and web interface.
-- **Security & Privacy**: Zero plaintext storage of BYOK LLM credentials; strict user data isolation; encrypted PDF storage with pre-signed access.
+- **Security & Privacy**: Zero plaintext storage of BYOK LLM credentials; strict user data isolation; encrypted S3 PDF storage with pre-signed access.
 - **Accessibility**: Frontend conforms to WCAG 2.1 AA standards; responsive across mobile and desktop devices.
 
 ---
@@ -123,19 +123,18 @@ flowchart LR
 ## 6. MVP Scope vs. Excluded Scope
 
 ### In Scope (MVP)
-1. Supabase Auth with secure backend token validation.
-2. PDF resume upload and structured profile extraction.
+1. Amazon Cognito User Pools authentication with secure backend token validation.
+2. PDF/DOCX resume upload to Private Amazon S3 and structured profile extraction.
 3. Conversational career goal intake with persistent candidate memory and dealbreakers.
-4. Hybrid search (keyword + `pgvector`) over curated job listings.
+4. Hybrid search (Amazon S3 Vectors + Aurora PostgreSQL relational filters) over curated job listings.
 5. Deterministic, explainable compatibility scoring.
 6. Side-by-side job comparison.
 7. Ethical resume bullet tailoring.
 8. Daily email digest generation via EventBridge Scheduler and SQS.
-9. BYOK integration for candidate-driven LLM interactions.
+9. Dual AI inference tier: Amazon Bedrock (with account quota resilience) and candidate BYOK.
 
 ### Explicitly Excluded (Initial Release)
 1. **Automated Application Submission**: Bot-submitting forms on external portals is disallowed.
 2. **Recruiter Portal**: No employer accounts, posting management, or candidate resume databases.
 3. **Paid Monetization**: No subscription gating, payment processing, or recruiter credits.
 4. **Proprietary Scraper Reverse-Engineering**: All job data ingestion must respect robots.txt and official APIs.
-

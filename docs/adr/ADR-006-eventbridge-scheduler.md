@@ -27,7 +27,7 @@ Use **Amazon EventBridge Scheduler** to trigger scheduled workloads:
 - **Negative**: Debugging scheduled triggers requires CloudWatch metric and SQS queue inspection.
 
 ## 5. Risks
-- Batch jobs triggering simultaneously could overwhelm Supabase database connection limits. Mitigated by throttling worker Lambda concurrency to 5 instances.
+- Batch jobs triggering simultaneously could overwhelm relational database connection limits. Mitigated by throttling worker Lambda concurrency to 5 instances.
 
 ## 6. References
 - Amazon EventBridge Scheduler User Guide: https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html

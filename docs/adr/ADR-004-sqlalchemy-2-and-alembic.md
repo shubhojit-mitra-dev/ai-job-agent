@@ -7,7 +7,7 @@
 ---
 
 ## 1. Context
-We need a modern, type-safe Object Relational Mapper (ORM) and a deterministic schema migration management system for the Python FastAPI backend interacting with Supabase PostgreSQL.
+We need a modern, type-safe Object Relational Mapper (ORM) and a deterministic schema migration management system for the Python FastAPI backend interacting with PostgreSQL (Amazon Aurora PostgreSQL Serverless v2 in production, local containerized PostgreSQL in development).
 
 ## 2. Decision
 Use **SQLAlchemy 2.0** with the `asyncpg` async driver as the application ORM, and **Alembic** for schema migrations:
