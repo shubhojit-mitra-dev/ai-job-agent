@@ -150,3 +150,4 @@ To ensure developers can run and test the application without AWS credentials, S
 - [Amazon S3 Developer Guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html)
 - [Amazon Bedrock Titan Text Embeddings V2](https://docs.aws.amazon.com/bedrock/latest/userguide/titan-embedding-models.html)
 - [docs/ARCHITECTURE.md](../ARCHITECTURE.md)
+

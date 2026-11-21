@@ -178,3 +178,4 @@ npm run build
 With the AWS-native target architecture documentation and ADRs established and verified, the next authorized milestone is:
 - **Phase 01: Candidate Core & Resume Ingestion**
   - **Subphase 01**: Candidate Profile Domain Models, Pydantic Schemas, and SQLAlchemy Migration.
+

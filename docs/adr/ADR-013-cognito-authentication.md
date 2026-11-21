@@ -135,3 +135,4 @@ flowchart LR
 - [Amazon Cognito Pricing](https://aws.amazon.com/cognito/pricing/)
 - [Controlling Access to HTTP APIs with JWT Authorizers](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html)
 - [docs/SECURITY.md](../SECURITY.md)
+
