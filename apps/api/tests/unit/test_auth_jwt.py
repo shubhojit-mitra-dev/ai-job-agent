@@ -11,7 +11,12 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from fastapi import HTTPException
-from jwt.exceptions import InvalidKeyError, PyJWKClientConnectionError, PyJWKSetError
+from jwt.exceptions import (
+    InvalidKeyError,
+    PyJWKClientConnectionError,
+    PyJWKClientError,
+    PyJWKSetError,
+)
 
 from app.core.config import settings
 from app.core.security import verify_supabase_jwt
@@ -144,8 +149,8 @@ def test_verify_unknown_kid_returns_401(rsa_key_pair: tuple[rsa.RSAPrivateKey, s
     token = create_token(private_key, headers={"kid": "unknown-ghost-kid"})
 
     mock_jwks_client = MagicMock()
-    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKSetError(
-        "Unable to find a signing key that matches the key id"
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKClientError(
+        'Unable to find a signing key that matches: "unknown-ghost-kid"'
     )
 
     with (
@@ -155,6 +160,50 @@ def test_verify_unknown_kid_returns_401(rsa_key_pair: tuple[rsa.RSAPrivateKey, s
         verify_supabase_jwt(token)
 
     assert exc_info.value.status_code == 401
+
+
+def test_verify_malformed_jwks_payload_returns_503(
+    rsa_key_pair: tuple[rsa.RSAPrivateKey, str],
+) -> None:
+    """Verify malformed JWKS payload from provider returns controlled 503."""
+    private_key, _ = rsa_key_pair
+    token = create_token(private_key)
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKClientError(
+        "The JWKS endpoint did not return a JSON object"
+    )
+
+    with (
+        patch("app.core.security.get_jwks_client", return_value=mock_jwks_client),
+        pytest.raises(HTTPException) as exc_info,
+    ):
+        verify_supabase_jwt(token)
+
+    assert exc_info.value.status_code == 503
+    assert "temporarily unavailable" in exc_info.value.detail
+
+
+def test_verify_empty_jwks_keys_returns_503(
+    rsa_key_pair: tuple[rsa.RSAPrivateKey, str],
+) -> None:
+    """Verify empty JWKS response from provider returns controlled 503."""
+    private_key, _ = rsa_key_pair
+    token = create_token(private_key)
+
+    mock_jwks_client = MagicMock()
+    mock_jwks_client.get_signing_key_from_jwt.side_effect = PyJWKSetError(
+        "The JWK Set did not contain any keys"
+    )
+
+    with (
+        patch("app.core.security.get_jwks_client", return_value=mock_jwks_client),
+        pytest.raises(HTTPException) as exc_info,
+    ):
+        verify_supabase_jwt(token)
+
+    assert exc_info.value.status_code == 503
+    assert "temporarily unavailable" in exc_info.value.detail
 
 
 def test_verify_malformed_key_returns_401(rsa_key_pair: tuple[rsa.RSAPrivateKey, str]) -> None:

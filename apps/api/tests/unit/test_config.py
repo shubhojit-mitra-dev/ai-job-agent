@@ -63,6 +63,45 @@ def test_production_rejects_jwt_secret_fallback() -> None:
         )
 
 
+def test_production_rejects_disallowed_jwt_algorithms() -> None:
+    """Verify production rejects symmetric or non-allowlisted JWT algorithms."""
+    with pytest.raises(
+        ValidationError,
+        match="SUPABASE_JWT_ALGORITHMS in production must strictly be a non-empty subset of",
+    ):
+        Settings(
+            APP_ENV="production",
+            SUPABASE_URL="https://prod-project.supabase.co",
+            SUPABASE_ANON_KEY="prod-anon-key-that-is-long-enough-for-validation",
+            APP_SECRET_KEY="production-super-strong-secret-key-at-least-32b",
+            SUPABASE_JWT_ALGORITHMS=["HS256"],
+        )
+
+    with pytest.raises(
+        ValidationError,
+        match="SUPABASE_JWT_ALGORITHMS in production must strictly be a non-empty subset of",
+    ):
+        Settings(
+            APP_ENV="production",
+            SUPABASE_URL="https://prod-project.supabase.co",
+            SUPABASE_ANON_KEY="prod-anon-key-that-is-long-enough-for-validation",
+            APP_SECRET_KEY="production-super-strong-secret-key-at-least-32b",
+            SUPABASE_JWT_ALGORITHMS=["none"],
+        )
+
+    with pytest.raises(
+        ValidationError,
+        match="SUPABASE_JWT_ALGORITHMS in production must strictly be a non-empty subset of",
+    ):
+        Settings(
+            APP_ENV="production",
+            SUPABASE_URL="https://prod-project.supabase.co",
+            SUPABASE_ANON_KEY="prod-anon-key-that-is-long-enough-for-validation",
+            APP_SECRET_KEY="production-super-strong-secret-key-at-least-32b",
+            SUPABASE_JWT_ALGORITHMS=[],
+        )
+
+
 def test_production_accepts_valid_configuration() -> None:
     """Verify production mode accepts valid, secure configuration."""
     settings = Settings(

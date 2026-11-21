@@ -5,6 +5,8 @@ from typing import Literal, Self
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ALLOWED_ASYMMETRIC_ALGORITHMS: frozenset[str] = frozenset({"RS256", "ES256"})
+
 
 class Settings(BaseSettings):
     """Core application settings loaded from environment and .env."""
@@ -103,6 +105,13 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SUPABASE_JWT_SECRET is forbidden in production; "
                     "asymmetric JWKS verification is strictly required."
+                )
+            disallowed_algs = set(self.SUPABASE_JWT_ALGORITHMS) - ALLOWED_ASYMMETRIC_ALGORITHMS
+            if disallowed_algs or not self.SUPABASE_JWT_ALGORITHMS:
+                algs = sorted(ALLOWED_ASYMMETRIC_ALGORITHMS)
+                raise ValueError(
+                    f"SUPABASE_JWT_ALGORITHMS in production must strictly be a non-empty subset of "
+                    f"{algs}; disallowed algorithms: {sorted(disallowed_algs)}."
                 )
         return self
 

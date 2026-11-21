@@ -1,5 +1,6 @@
 """Cryptographic token verification and security utilities."""
 
+import json
 import logging
 import urllib.error
 from typing import Any
@@ -12,12 +13,13 @@ from jwt.exceptions import (
     InvalidKeyError,
     InvalidTokenError,
     PyJWKClientConnectionError,
+    PyJWKClientError,
     PyJWKError,
     PyJWKSetError,
     PyJWTError,
 )
 
-from app.core.config import settings
+from app.core.config import ALLOWED_ASYMMETRIC_ALGORITHMS, settings
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +98,9 @@ def verify_supabase_jwt(token: str) -> dict[str, Any]:
             raise unauthorized_exc from None
 
     # Strict asymmetric algorithm allowlist check
-    if alg not in settings.SUPABASE_JWT_ALGORITHMS:
+    if alg not in settings.SUPABASE_JWT_ALGORITHMS or (
+        settings.APP_ENV == "production" and alg not in ALLOWED_ASYMMETRIC_ALGORITHMS
+    ):
         logger.warning("Rejected token with non-allowlisted algorithm: %s", alg)
         raise unauthorized_exc
 
@@ -115,13 +119,26 @@ def verify_supabase_jwt(token: str) -> dict[str, Any]:
         urllib.error.URLError,
         TimeoutError,
         ConnectionError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
     ) as err:
         logger.error(
-            "Supabase JWKS provider unreachable or network error: %s",
+            "Supabase JWKS provider unreachable or invalid response: %s",
             type(err).__name__,
         )
         raise service_unavailable_exc from None
+    except PyJWKClientError as err:
+        err_msg = str(err)
+        if "endpoint did not return a JSON" in err_msg or "did not contain any keys" in err_msg:
+            logger.error("Supabase JWKS response malformed or empty: %s", err_msg)
+            raise service_unavailable_exc from None
+        logger.warning("Signing key lookup failed in JWKS: %s", type(err).__name__)
+        raise unauthorized_exc from None
     except PyJWKSetError as err:
+        err_msg = str(err)
+        if "did not contain any keys" in err_msg:
+            logger.error("Supabase JWKS response contained no keys: %s", err_msg)
+            raise service_unavailable_exc from None
         logger.warning("Signing key not found in JWKS: %s", type(err).__name__)
         raise unauthorized_exc from None
     except (InvalidKeyError, PyJWKError) as err:
