@@ -1,0 +1,101 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches:
+      - master
+      - "milestone-*"
+      - "phase-*"
+  pull_request:
+    branches:
+      - master
+      - "milestone-*"
+      - "phase-*"
+
+permissions:
+  contents: read
+
+jobs:
+  backend-quality:
+    name: Backend Lint, Type-Check & Test Suite
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: career_platform_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d career_platform_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres_ci_test_password@localhost:5432/career_platform_test
+      MIGRATION_DATABASE_URL: postgresql://postgres:postgres_ci_test_password@localhost:5432/career_platform_test
+      REQUIRE_POSTGRES: "true"
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: dev-only-placeholder-anon-key-local-dev
+      APP_SECRET_KEY: dev-only-local-secret-key-not-for-production-min32b
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@4db96194c378173c656ce18a155ffc14a9fc4355 # v5.2.2
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install backend dependencies
+        run: uv sync --all-groups
+
+      - name: Check code formatting (Ruff format)
+        run: uv run ruff format --check .
+
+      - name: Check lint rules (Ruff check)
+        run: uv run ruff check .
+
+      - name: Static type analysis (Mypy)
+        run: uv run mypy .
+
+      - name: Run database schema migrations (Alembic)
+        run: uv run alembic upgrade head
+
+      - name: Execute automated test suite (Pytest)
+        run: uv run pytest -v
+
+  frontend-quality:
+    name: Frontend Lint & Build Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run Next.js ESLint
+        run: npm run lint
+
+      - name: Run Next.js Production Build
+        run: npm run build
