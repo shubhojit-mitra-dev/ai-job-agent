@@ -16,7 +16,7 @@ Implement a **Bring Your Own Key (BYOK)** LLM provider abstraction:
    - Cloudflare Workers AI
    - OpenRouter
    - Google Gemini
-2. Candidate API keys are encrypted at rest using AES-256-GCM authenticated envelope encryption in Supabase.
+2. Candidate API keys are encrypted at rest using AES-256-GCM authenticated envelope encryption in the relational database (Amazon Aurora PostgreSQL in production, local PostgreSQL in development).
 3. The backend abstracts LLM interactions behind a unified `LLMClient` protocol, ensuring agent workflows in LangGraph remain agnostic to the specific underlying model provider.
 
 ## 3. Alternatives Considered

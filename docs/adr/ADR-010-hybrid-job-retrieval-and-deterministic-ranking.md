@@ -15,7 +15,7 @@ Furthermore, candidates distrust opaque recommendation scores.
 ## 2. Decision
 Adopt a **Two-Stage Hybrid Retrieval & Deterministic Ranking Engine**:
 1. **Stage 1: Hybrid Retrieval**:
-   - `pgvector` calculates vector cosine similarity between candidate profile embeddings and job embeddings.
+   - **Vector Similarity**: Vector cosine similarity between candidate profile embeddings and job embeddings is retrieved via Amazon S3 Vectors ([ADR-015](./ADR-015-s3-vectors-for-vector-storage.md)) or local vector store abstraction.
    - Relational SQL filters eliminate expired postings and apply strict non-negotiable candidate dealbreakers (e.g. location, maximum experience required, minimum salary).
 2. **Stage 2: Deterministic Scoring Rubric (0–100%)**:
    - Primary Skills Overlap: 40%

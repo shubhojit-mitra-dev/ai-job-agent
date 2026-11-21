@@ -10,7 +10,7 @@
 
 - **Project Description**: AI Career Platform — an India-first, open-source, candidate-centric career discovery platform designed for Indian students, fresh graduates, and professionals.
 - **Core Mission**: Empower job seekers with transparent candidate-job matching, AI-assisted career goal discovery, tailored resume suggestions without fabrication, persistent preferences, and personalized daily digests.
-- **Architecture Paradigm**: Modular Monolith on a Serverless / Managed Cloud foundation (FastAPI on AWS Lambda via Mangum, Next.js on frontend, Supabase PostgreSQL with `pgvector`).
+- **Architecture Paradigm**: Modular Monolith on an AWS-Native Serverless / Managed Cloud foundation (FastAPI on AWS Lambda via Mangum, Next.js on frontend, Amazon Aurora PostgreSQL Serverless v2, Amazon S3 Vectors, Amazon Cognito User Pools, Amazon Bedrock / BYOK).
 - **Governance**: You operate under a human Technical Lead. The human is the final authority for architectural decisions, scope approvals, and merging PRs. You must work methodically, inspect existing code before acting, avoid unnecessary abstractions, and never implement work outside the authorized subphase scope.
 
 ---
@@ -21,12 +21,12 @@ Before proposing or executing changes, agents must consult project documentation
 
 1. [AGENTS.md](./AGENTS.md) (This file — governance, conventions, definition of done)
 2. [docs/progress/PROGRESS.md](./docs/progress/PROGRESS.md) (Current phase, subphase status, active branches, known issues)
-3. [docs/phases/PHASE_00_PROJECT_FOUNDATION.md](./docs/phases/PHASE_00_PROJECT_FOUNDATION.md) (Current phase milestones)
+3. [docs/phases/PHASE_00_PROJECT_FOUNDATION.md](./docs/phases/PHASE_00_PROJECT_FOUNDATION.md) (Completed foundation milestones)
 4. Specific subphase specification in `docs/subphases/` for your active task
 5. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) (System architecture, data flows, integration constraints)
 6. [docs/PRODUCT_SPEC.md](./docs/PRODUCT_SPEC.md) (Functional requirements, user personas, boundaries)
-7. [docs/adr/](./docs/adr/) (Architectural Decision Records relevant to your domain)
-8. [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md), [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md), and [docs/SECURITY.md](./docs/SECURITY.md)
+7. [docs/adr/](./docs/adr/) (Architectural Decision Records ADR-001 ... ADR-016)
+8. [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md), [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md), [docs/SECURITY.md](./docs/SECURITY.md), and [docs/COST_AND_OPERATIONS.md](./docs/COST_AND_OPERATIONS.md)
 
 ---
 
@@ -37,28 +37,27 @@ ai-job-agent/
 ├── apps/
 │   ├── api/                 # FastAPI backend (Python 3.12, uv, Mangum adapter)
 │   │   ├── app/             # Application source tree
-│   │   │   ├── api/v1/      # REST API route handlers (planned)
-│   │   │   ├── core/        # Core configuration, security, telemetry (planned)
-│   │   │   ├── db/          # Database engine, session lifecycle, base models (planned)
-│   │   │   ├── modules/     # Domain business logic (planned)
-│   │   │   ├── schemas/     # Domain Pydantic request/response schemas (planned)
+│   │   │   ├── api/v1/      # REST API route handlers (existing)
+│   │   │   ├── core/        # Core configuration, security, telemetry (existing)
+│   │   │   ├── db/          # Database engine, session lifecycle, base models (existing)
+│   │   │   ├── modules/     # Domain business logic (existing auth module, planned modules)
+│   │   │   ├── schemas/     # Domain Pydantic request/response schemas (existing)
 │   │   │   └── main.py      # FastAPI application entrypoint & /health route (existing)
+│   │   ├── tests/           # Automated test suite (unit and integration tests) (existing)
 │   │   ├── pyproject.toml   # Python package definitions and dependency pins (existing)
 │   │   └── uv.lock          # Cryptographic dependency lockfile (existing)
-│   │   # Note: apps/api/tests/ is planned for implementation in Subphase 02+
 │   └── web/                 # Next.js frontend (TypeScript, Tailwind CSS, App Router) (existing)
 │       ├── src/app/         # Next.js App Router pages and layouts (existing)
 │       ├── public/          # Static assets (existing)
 │       └── AGENTS.md        # Next.js-specific framework agent guidance (existing)
 ├── docs/                    # Authoritative engineering, architecture, and phase documentation (existing)
-│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-012) (existing)
+│   ├── adr/                 # Architectural Decision Records (ADR-001 ... ADR-016) (existing)
 │   ├── phases/              # High-level phase roadmaps (existing)
 │   ├── subphases/           # Detailed per-subphase implementation plans (existing)
 │   ├── progress/            # PROGRESS.md tracking file (existing)
 │   └── walkthroughs/        # Post-subphase audit walkthroughs (existing)
-├── infra/                   # Infrastructure definitions (planned)
-│   ├── docker/              # Local Docker Compose & test container definitions (planned)
-│   ├── supabase/            # Supabase schema definitions and local config (planned)
+├── infra/                   # Infrastructure definitions (existing)
+│   ├── docker/              # Local Docker Compose test container definitions (existing)
 │   └── terraform/           # AWS Infrastructure as Code (planned)
 ├── packages/                # Shared monorepo packages (planned)
 │   └── shared-schemas/      # Shared cross-boundary schema definitions (planned)
@@ -74,31 +73,37 @@ ai-job-agent/
 
 All code must comply with approved Architectural Decision Records ([docs/adr/](./docs/adr/)):
 
-1. **Modular Monolith**: Clean domain boundaries within `apps/api/app/modules/`. No arbitrary microservices, separate RPC daemons, or unnecessary message brokers.
-2. **FastAPI on AWS Lambda**: Serverless backend packaging via ZIP deployed to AWS Lambda in `ap-south-1` (Mumbai) fronted by AWS API Gateway HTTP API and Mangum ASGI adapter.
+1. **Modular Monolith**: Clean domain boundaries within `apps/api/app/modules/`. No arbitrary microservices, separate RPC daemons, or unnecessary message brokers ([ADR-001](./docs/adr/ADR-001-modular-monolith-architecture.md)).
+2. **FastAPI on AWS Lambda**: Serverless backend packaging via ZIP deployed to AWS Lambda in `ap-south-1` (Mumbai) fronted by AWS API Gateway HTTP API and Mangum ASGI adapter ([ADR-002](./docs/adr/ADR-002-fastapi-aws-lambda-mangum-zip.md)).
 3. **Database Engine & Pooling**:
-   - Supabase PostgreSQL with `pgvector` for vector similarity.
-   - SQLAlchemy 2.0 with `asyncpg` for application runtime.
-   - For serverless AWS Lambda execution: use `NullPool` to prevent connection leaks across ephemeral instances, connect to Supabase Transaction Pooler (port 6543), and enforce `statement_cache_size=0` on `asyncpg` connect args because transaction poolers disallow prepared statement caching.
-   - Alembic runs exclusively outside Lambda cold starts (CI/CD pipeline or migration runner) connecting directly to port 5432 (Session mode) with administrative credentials.
+   - **Amazon Aurora PostgreSQL Serverless v2** (PostgreSQL 16 compatible) in `ap-south-1` ([ADR-014](./docs/adr/ADR-014-aurora-postgresql-serverless-v2.md)).
+   - SQLAlchemy 2.0 with `asyncpg` for application runtime ([ADR-004](./docs/adr/ADR-004-sqlalchemy-2-and-alembic.md)).
+   - For serverless AWS Lambda execution: use `NullPool` to prevent connection leaks across ephemeral instances, and set `statement_cache_size=0`.
+   - Alembic runs exclusively outside Lambda cold starts (CI/CD pipeline or migration runner) connecting directly to port 5432 with administrative credentials.
+   - Lambda connectivity follows the evaluation in [ADR-014](./docs/adr/ADR-014-aurora-postgresql-serverless-v2.md).
 4. **Authentication, Authorization & Database Isolation**:
-   - Supabase Auth issues JWT access tokens upon candidate login.
-   - FastAPI verifies JWT signatures (via Supabase JWKS), issuer, audience, and expiry on all protected routes, extracting the authenticated candidate ID (`sub`).
+   - **Amazon Cognito User Pools** issues JWT access tokens upon candidate login ([ADR-013](./docs/adr/ADR-013-cognito-authentication.md)).
+   - API Gateway HTTP API JWT Authorizer validates tokens at the perimeter edge.
+   - FastAPI verifies JWT signatures (via Cognito JWKS), issuer, client ID/audience, and expiry on protected routes, extracting the authenticated candidate ID (`sub`).
    - SQLAlchemy connects to PostgreSQL using application credentials. Application SQL queries must enforce strict tenant isolation (`WHERE user_id = current_user.id`).
-   - Note: Direct SQLAlchemy connections do **not** inherit Supabase Auth context automatically. Defense in depth is provided by least-privileged database roles and/or setting transaction-scoped context variables for PostgreSQL Row-Level Security (RLS) policies inside each transaction.
+   - Note: Direct SQLAlchemy connections do **not** inherit authentication context automatically. Defense in depth is provided by least-privileged database roles and/or setting transaction-scoped context variables (`SET LOCAL app.current_user_id = :authenticated_user_id`) inside each transaction.
 5. **Asynchronous Background Processing**:
-   - Heavy background tasks (resume parsing, batch job scraping, email digest generation) are dispatched to AWS SQS queues.
+   - Heavy background tasks (resume parsing, batch job scraping, email digest generation) are dispatched to Amazon SQS queues ([ADR-005](./docs/adr/ADR-005-sqs-background-processing.md)).
    - Dedicated worker Lambdas process SQS events idempotently with Dead-Letter Queues (DLQ).
    - SQS visibility timeout must be configured to at least six times the Lambda function timeout, accounting for batch windows and retry behavior.
-   - EventBridge Scheduler manages cron-like recurring triggers configured explicitly with timezone `Asia/Kolkata` (e.g. daily morning digests at 06:00 AM IST).
-6. **AI & Agent Architecture**:
+   - EventBridge Scheduler manages cron-like recurring triggers configured explicitly with timezone `Asia/Kolkata` (e.g. daily morning digests at 06:00 AM IST) ([ADR-006](./docs/adr/ADR-006-eventbridge-scheduler.md)).
+6. **Vector Search & Document Storage**:
+   - **Amazon S3 Vectors** manages vector indexing and approximate nearest neighbor (ANN) similarity search for candidates and jobs ([ADR-015](./docs/adr/ADR-015-s3-vectors-for-vector-storage.md)).
+   - **Private Amazon S3** in `ap-south-1` stores candidate resume documents with Block Public Access, SSE-KMS encryption, candidate-scoped keys, and short-lived (15-minute) pre-signed URLs ([ADR-012](./docs/adr/ADR-012-resume-file-storage-and-secure-access.md)).
+7. **AI & Agent Architecture**:
    - LangGraph orchestrates multi-step career agent workflows via stateful directed graphs.
-   - Bring Your Own Key (BYOK) architecture for LLM providers (NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Gemini).
-   - Candidate API keys are encrypted at rest using AES-GCM envelope encryption before persistence.
-   - Candidate resumes and job descriptions are treated as untrusted input. Delimiters provide context separation but are not security boundaries. LLM outputs must never independently authorize privileged actions; all tool executions and schema outputs must be strictly authorized and validated outside the model.
-   - Local/open-source Sentence Transformers embeddings are evaluated under strict Lambda bundle size limits (250MB uncompressed limit).
-7. **Prohibited Infrastructure**:
-   - Do NOT introduce EC2 instances, Kubernetes/EKS, NAT Gateways without explicit approval, ElastiCache/Redis clusters, RDS instances, or always-on servers.
+   - Foundation model inference leverages **Amazon Bedrock** (Amazon Titan models) with graceful fallback and resilience abstractions ([ADR-016](./docs/adr/ADR-016-bedrock-foundation-model-integration.md)). Note: Bedrock access is currently subject to an account-level quota blocker with an open AWS Support case; the application must decouple from Bedrock via `ENABLE_BEDROCK=false` and use fake providers or candidate BYOK.
+   - **Anthropic models are explicitly excluded** from the planned inference stack.
+   - **Bring Your Own Key (BYOK)** architecture allows candidates to connect personal keys (NVIDIA NIM, Cloudflare Workers AI, OpenRouter, Gemini), encrypted at rest via AES-256-GCM envelope encryption ([ADR-009](./docs/adr/ADR-009-byok-provider-abstraction.md)).
+   - Candidate resumes and job descriptions are treated as untrusted input. Delimiters provide context separation but are not security boundaries. LLM outputs must never independently authorize privileged actions.
+   - Embedding generation uses Amazon Titan Text Embeddings V2 as the initial candidate ([ADR-011](./docs/adr/ADR-011-local-embedding-strategy-and-deployment-constraints.md)), decoupled from S3 Vectors storage.
+8. **Prohibited Infrastructure**:
+   - Do NOT introduce EC2 instances, Kubernetes/EKS, NAT Gateways without explicit authorization, ElastiCache/Redis clusters, RDS Proxy (avoids fixed monthly cost), OpenSearch Serverless, or always-on servers ([docs/COST_AND_OPERATIONS.md](./docs/COST_AND_OPERATIONS.md)).
 
 ---
 
@@ -127,9 +132,9 @@ We adhere strictly to Test-Driven Development (TDD) for all application code:
    - Implement the minimal clean solution.
    - Verify tests pass.
    - Refactor cleanly.
-2. **LLM Workflow Testing**:
-   - Never call live, paid external LLM APIs inside automated test suites.
-   - Use deterministic mock fixtures, synthetic test resumes/job postings, and fake provider interfaces.
+2. **LLM & AWS Workflow Testing**:
+   - Never call live, paid external LLM or cloud APIs inside automated test suites.
+   - Use deterministic mock fixtures (`FakeLLMClient`, `FakeVectorStore`, `FakeEmbeddingProvider`).
    - Test for malicious inputs, prompt injection attempts, and tool authorization guards.
 3. **Database Testing**:
    - Test queries against ephemeral local PostgreSQL containers or transactional rollback fixtures.
@@ -140,7 +145,7 @@ We adhere strictly to Test-Driven Development (TDD) for all application code:
 
 ## 7. Security & Privacy Mandates
 
-- **Sensitive Data Handling**: Candidate resumes contain Personal Identifiable Information (PII). Resume storage provider is subject to architectural evaluation (Supabase Storage vs AWS S3 in ADR-012). Access must require authenticated, short-lived pre-signed URLs.
+- **Sensitive Data Handling**: Candidate resumes contain Personal Identifiable Information (PII). Resumes are stored in Private Amazon S3 with Block Public Access, candidate-scoped keys (`candidates/{user_id}/resumes/{resume_id}.pdf`), and short-lived pre-signed URLs.
 - **BYOK Key Protection**: User LLM keys must be encrypted at rest using authenticated symmetric encryption (AES-256-GCM). Never log or display plaintext API keys.
 - **Prompt Injection Defense**: Untrusted text from user resumes or external job postings must be encapsulated with boundary delimiters. LLMs must not possess autonomous authority to perform privileged state mutations without external authorization checks.
 - **SSRF Prevention**: All external job scraping and links must validate protocol (`https` only), restrict destinations to trusted hosts, and prevent loopback/internal IP requests.
@@ -155,12 +160,12 @@ We adhere strictly to Test-Driven Development (TDD) for all application code:
   ```text
   phase-XX/subphase-YY-short-description
   ```
-  *Example*: `phase-00/subphase-01-agentic-governance`
+  *Example*: `phase-01/subphase-01-candidate-schema`
 - **Commit Standards**: Conventional Commits format:
   ```text
   feat(module): add job search filter
   fix(auth): correct token expiry validation
-  docs(adr): add ADR-012 for resume storage
+  docs(adr): add ADR-014 for Aurora PostgreSQL
   test(agent): add deterministic mock tests for goal parser
   ```
 - **Pull Request Lifecycle**:

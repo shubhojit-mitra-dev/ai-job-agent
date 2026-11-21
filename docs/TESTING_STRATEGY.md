@@ -1,8 +1,8 @@
 # Testing Strategy: AI Career Platform
 
-> **Status**: Approved Foundation  
+> **Status**: Approved Foundation (AWS-Native Target Architecture)  
 > **Audience**: Software Engineers, QA, AI Coding Agents  
-> **Revision**: 1.1 (Phase 00)
+> **Revision**: 2.0 (Phase 01 Architecture Migration)
 
 ---
 
@@ -34,30 +34,36 @@ flowchart TD
 | **Unit Tests** | Domain business logic, deterministic match scoring rubric, preference parsers, schema validations | < 50ms per test | Completely isolated; pure in-memory functions |
 | **Contract / Schema Tests** | Pydantic model serialization, API request/response validation | < 100ms per test | None |
 | **Integration Tests** | FastAPI route handlers, database queries via SQLAlchemy, SQS message dispatch | 100ms - 1s per test | Local test DB or transactional rollbacks |
+| **Vector Store Tests** | Vector indexing, metadata filtering, similarity retrieval | < 50ms per test | `FakeVectorStore` in-memory mock |
 | **Agent Workflow Tests** | LangGraph state transitions, routing logic, prompt assembly | < 500ms per test | Mocked LLM clients; deterministic response fixtures |
 | **Security & Injection Tests** | Adversarial prompt injection, tool authorization checks, tenant boundary violation attempts | < 500ms per test | Mock fixtures & security test cases |
 | **Frontend Tests** | UI component rendering, form validations, accessibility audits | 200ms - 2s per test | React Testing Library, Playwright (planned) |
 
 ---
 
-## 3. Testing AI & LLM Workflows Without Live APIs
+## 3. Testing AWS Integrations Without Live Cloud APIs
 
-### Critical Rule: Zero Paid External API Invocations in Automated Tests
-Automated CI/CD pipelines and local test suites must **never** make live calls to external LLM providers (NVIDIA NIM, Cloudflare, OpenAI, OpenRouter, Gemini). 
+### Critical Mandate: Zero Live Paid AWS Calls in Automated Tests
+Automated CI/CD pipelines and local developer test suites must **never** make live calls to paid external services (Amazon Bedrock, Amazon Cognito, Amazon S3 Vectors, or third-party LLM providers).
 
-### Testing Strategy for LangGraph Agents:
-1. **Deterministic Mock Fixtures**:
-   - Provide pre-recorded or synthetic JSON/text responses that mimic expected LLM outputs for given prompts.
-2. **Fake Provider Client (`FakeLLMClient`)**:
-   - Create an in-memory test implementation of the `LLMClient` protocol that returns controlled outputs based on input prompt signatures.
-3. **State Transition Validation**:
-   - Test that LangGraph nodes accurately update `CandidateState` (e.g. updating goals, recording dealbreakers, routing between agents).
+### Architectural Abstractions for Testing:
+1. **Amazon Cognito Authentication Testing**:
+   - The test suite utilizes ephemeral RSA keypairs generated in-memory (`rsa_key_pair` fixture) to mint validly signed RS256 test JWTs.
+   - The JWKS client is mocked via dependency injection to return the test public key, verifying all cryptographic claim checks (signature, `iss`, `aud`, `exp`, `sub`) without live Cognito network requests.
+2. **Amazon S3 Vectors Testing**:
+   - Tested using the `FakeVectorStore` implementation which stores vectors in an in-memory dictionary and executes cosine similarity calculations using pure Python/NumPy.
+   - Ensures vector indexing, metadata filtering, and hybrid retrieval logic can be verified with 100% test coverage in milliseconds.
+3. **Amazon S3 Document Storage Testing**:
+   - Pre-signed URL generation is tested using mock STS/boto3 credentials or the `Moto` mock library, validating expiration windows, allowed MIME types, and Content-Length limits without touching real S3 buckets.
+4. **Amazon Bedrock & LangGraph Agent Testing**:
+   - All agent workflows use `FakeLLMClient` with canned JSON/text response fixtures.
+   - State transition tests verify that LangGraph accurately mutates candidate memory, extracts dealbreakers, and validates structured Pydantic outputs.
 
 ```python
-# Example: Testing Agent State Transition with Deterministic Mock
+# Example: Testing LangGraph Agent with Deterministic Mock
 import pytest
-from app.modules.agent.graph import create_career_graph
 from app.modules.agent.providers import FakeLLMClient
+from app.modules.agent.graph import create_career_graph
 
 @pytest.mark.asyncio
 async def test_career_discovery_agent_updates_dealbreakers():
@@ -92,7 +98,7 @@ Because candidate resumes and external job descriptions represent untrusted inpu
 ## 5. Database Integration Testing
 
 When testing database operations with SQLAlchemy 2.0:
-1. **Isolated Test Database**: Local tests run against an ephemeral PostgreSQL instance (via Docker Compose) with `pgvector` enabled.
+1. **Isolated Test Database**: Local tests run against an ephemeral PostgreSQL container (via Docker Compose) with `pgvector` enabled.
 2. **Transaction Rollback Fixture**: Each test function runs within an isolated database transaction that rolls back automatically upon completion:
    ```python
    @pytest.fixture
@@ -120,5 +126,5 @@ uv run pytest
 uv run pytest -v --cov=app
 
 # Run a specific test module
-uv run pytest tests/unit/test_matching_rubric.py
+uv run pytest tests/unit/test_auth_jwt.py
 ```
